@@ -38,14 +38,13 @@ namespace raft {
 			//kalau term dari data rpc kurang dari term server ini
 			if (rpc.term < current_term) {
 				//buat reply untuk dikirim ke leader
-				AppendEntriesReply *aer = new AppendEntriesReply();
-				aer->from_id = server_index;
-				aer->request = rpc;
-				aer->success = false;
+				AppendEntriesReply aer;
+				aer.from_id = server_index;
+				aer.request = rpc;
+				aer.success = false;
 
 				//kirim reply
 				sender_.send(rpc.leader_id , aer);
-				delete aer; 
 			} 
 			//term > term server ini, berarti data diproses
 			else {
@@ -53,12 +52,23 @@ namespace raft {
 				current_term = rpc.term;
 				if (rpc.logs != NULL) {
 					//jika logs current server belum lengkap, update current logs
-					if (logs.size() < rpc.logs.size()) {
-						for(int i = logs.size() - 1; i < rpc.logs.size()) {
+					int this_log_size = logs.size();
+					int rpc_log_size = rpc.logs.size();
+
+					if (this_log_size < rpc_log_size) {
+						for(int i = this_log_size - 1; i < rpc_log_size; i++) {
 							logs.push_back(rpc.logs[i]);
 						}
 					}
 				}
+
+				//create reply untuk dikirim kepada server leader
+				AppenEntriesReply aer;
+				aer.from_id = server_index;
+				aer.request = rpc;
+				aer.success = true;
+
+				sender_.send(rpc.leader_id, aer);
 			}
 		} 
   	}
