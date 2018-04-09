@@ -11,6 +11,10 @@ namespace raft {
 		sender_id = id;
 	}
 
+	void Sender::setSenderId(int id) {
+		sender_id = id;
+	}
+
 	void Sender::Send(int to, RequestVoteRPC payload){
 		simulation->Send(sender_id, to, payload);
 	}

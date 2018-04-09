@@ -28,24 +28,39 @@ namespace raft {
 	}
 
 	void Server::Timestep(){
+		//satu langkah menuju timeout
 		time_to_timeout--;
 	}
 
 	void Server::Receive(AppendEntriesRPC rpc){
+		//jika node merupakan follower
 		if (state = State::FOLLOWER) {
+			//kalau term dari data rpc kurang dari term server ini
 			if (rpc.term < current_term) {
-				AppendEntriesReply* aer = new AppendEntriesReply();
+				//buat reply untuk dikirim ke leader
+				AppendEntriesReply *aer = new AppendEntriesReply();
 				aer->from_id = server_index;
 				aer->request = rpc;
 				aer->success = false;
+
+				//kirim reply
+				sender_.send(rpc.leader_id , aer);
 				delete aer; 
-			} else {
+			} 
+			//term > term server ini, berarti data diproses
+			else {
+				//update term of current node
 				current_term = rpc.term;
 				if (rpc.logs != NULL) {
-					
+					//jika logs current server belum lengkap, update current logs
+					if (logs.size() < rpc.logs.size()) {
+						for(int i = logs.size() - 1; i < rpc.logs.size()) {
+							logs.push_back(rpc.logs[i]);
+						}
+					}
 				}
 			}
-		}
+		} 
   	}
 
 	void Server::Receive(AppendEntriesReply reply){

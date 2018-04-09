@@ -10,6 +10,9 @@ namespace raft {
 		Sender();
 		Sender(Mailer* s, int id);
 
+		//setter getter
+		void setSenderId(int id);
+
 		void Send(int to, RequestVoteRPC payload);
 		void Send(int to, AppendEntriesRPC payload);
 		void Send(int to, RequestVoteReply payload);
