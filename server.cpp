@@ -28,9 +28,24 @@ namespace raft {
 	}
 
 	void Server::Timestep(){
+		time_to_timeout--;
 	}
 
 	void Server::Receive(AppendEntriesRPC rpc){
+		if (state = State::FOLLOWER) {
+			if (rpc.term < current_term) {
+				AppendEntriesReply* aer = new AppendEntriesReply();
+				aer->from_id = server_index;
+				aer->request = rpc;
+				aer->success = false;
+				delete aer; 
+			} else {
+				current_term = rpc.term;
+				if (rpc.logs != NULL) {
+					
+				}
+			}
+		}
   	}
 
 	void Server::Receive(AppendEntriesReply reply){

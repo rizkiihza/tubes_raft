@@ -60,7 +60,6 @@ namespace raft {
 		AppendEntriesReply aereply;
 
 		friend std::ostream & operator<<(std::ostream &os, const Mail& m);
-
 	};
 
 	class Mailer {
