@@ -240,8 +240,8 @@ namespace raft {
 				sendRequestVoteReply(rpc, false);
 			} else {
 				if (voted_for == -1 || voted_for == rpc.candidate_id) {
-					sendRequestVoteReply(rpc, true);
 					voted_for = rpc.candidate_id;
+					sendRequestVoteReply(rpc, true);
 				}
 			}
 		} else if (current_term < rpc.term) {
@@ -314,6 +314,8 @@ namespace raft {
 				data = current_log.payload;
 			} 
 		}
+
+		//ganti last applied menjadi index yang terakhir di commit di server ini
 		last_applied = std::min(commit_index, (int)logs.size() - 1);
 	}
 
@@ -352,7 +354,7 @@ namespace raft {
 				  << "state:" << state_str << "\n"
 				  << "term:" << s.current_term << "\n" 
 				  << "voted_for:" << s.voted_for << "\n"
-				  << "commit_index:" << s.commit_index << "\n"
+				  << "commit_index:" << s.commit_index + 1 << "\n"
 
 				  //hapus sebelum kumpul
 				  << "last_applied:" << s.last_applied << "\n"
