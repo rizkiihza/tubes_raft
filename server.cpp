@@ -1,7 +1,7 @@
 #include <server.hpp>
 #include <sstream>
 #include <iostream>
-#include <cmath>
+#include <algorithm>
 namespace raft {
 	Server::Server(){
 		cluster_size = 0;
@@ -299,12 +299,8 @@ namespace raft {
 	void Server::ApplyLog(){
 		//commit log yang belum dicommit tp bisa dicommit
 		//dari last_applied + 1 hingga commit_index
-		int last_index = commit_index;
-		if (last_index >= logs.size()) {
-			last_index = logs.size() - 1;
-		}
 
-		for(int i = last_applied + 1; i <= last_index; i++) {
+		for(int i = last_applied + 1; i <= std::min(commit_index, (int)logs.size() - 1) ; i++) {
 			Log current_log = logs[i];
 
 			//if block untuk semua jenis operasi
@@ -318,7 +314,7 @@ namespace raft {
 				data = current_log.payload;
 			} 
 		}
-		last_applied = last_index;
+		last_applied = std::min(commit_index, (int)logs.size() - 1);
 	}
 
 	std::ostream & operator<<(std::ostream &os, const Server& s){
@@ -357,6 +353,10 @@ namespace raft {
 				  << "term:" << s.current_term << "\n" 
 				  << "voted_for:" << s.voted_for << "\n"
 				  << "commit_index:" << s.commit_index << "\n"
+
+				  //hapus sebelum kumpul
+				  << "last_applied:" << s.last_applied << "\n"
+
 				  << "data:" << s.data << "\n"
 
 				 //hapus sebelum kumpul
