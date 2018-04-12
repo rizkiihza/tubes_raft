@@ -61,10 +61,10 @@ namespace raft {
 
 	//fungsi helper untuk commit
 	void Server::leader_commit() {
-		int commit_max = -1;
-
 		//jika leader
 		if (state == State::LEADER) {
+			int commit_max = -1;
+			
 			for(int lg = 0; lg < logs.size(); lg++) {
 
 				//hitung jumlah node yang memiliki log ini
@@ -80,9 +80,10 @@ namespace raft {
 					commit_max = lg;
 				}
 			}
+
+			commit_index = commit_max;
+			ApplyLog();
 		}
-		commit_index = commit_max;
-		ApplyLog();
 	}
 
 	void Server::Timestep(){
@@ -161,8 +162,6 @@ namespace raft {
 		if (state == State::FOLLOWER || state == State::CANDIDATE) {
 
 			//update variable yg perlu di update
-			
-
 			if (rpc.term < current_term) {
 				//term dari heartbeat kurang dari term current server
 				sendAppendEntriesReply(rpc, false);
@@ -176,12 +175,13 @@ namespace raft {
 				//reset stat
 				time_to_timeout = 5;
 				leader = rpc.leader_id;
-				commit_index = rpc.leader_commit_index;
+				commit_index = std::min(rpc.leader_commit_index, (int) logs.size() - 1);
 
 				//jika commit index ketinggalan
 				//apply log hingga commit index
 				if (commit_index > last_applied) {
 					ApplyLog();
+					std::cout << "lebih woy\n";
 				}
 
 				//kalau ganti term, voted_for jadi 0 lagi
@@ -307,9 +307,10 @@ namespace raft {
 		//commit log yang belum dicommit tp bisa dicommit
 		//dari last_applied + 1 hingga commit_index
 
-		for(int i = last_applied + 1; i <= std::min(commit_index, (int)logs.size() - 1) ; i++) {
+		int starting = last_applied;
+		for(int i = starting+1; i <= commit_index && i <= logs.size() - 1) ; i++) {
 			Log current_log = logs[i];
-
+			
 			//if block untuk semua jenis operasi
 			if (current_log.operation == Operation::ADD) {
 				data = data + current_log.payload;
@@ -319,11 +320,11 @@ namespace raft {
 				data = data * current_log.payload;
 			} else if (current_log.operation == Operation::REPLACE) {
 				data = current_log.payload;
-			} 
+			}
+			last_applied += 1; 
 		}
 
 		//ganti last applied menjadi index yang terakhir di commit di server ini
-		last_applied = std::min(commit_index, (int)logs.size() - 1);
 	}
 
 	std::ostream & operator<<(std::ostream &os, const Server& s){
@@ -361,7 +362,7 @@ namespace raft {
 				  << "state:" << state_str << "\n"
 				  << "term:" << s.current_term << "\n" 
 				  << "voted_for:" << s.voted_for << "\n"
-				  << "commit_index:" << s.commit_index + 1 << "\n"
+				  << "commit_index:" << s.commit_index << "\n"
 
 				  //hapus sebelum kumpul
 				  << "last_applied:" << s.last_applied << "\n"
