@@ -1,6 +1,7 @@
 #include <server.hpp>
 #include <sstream>
 #include <iostream>
+#include <cmath>
 namespace raft {
 	Server::Server(){
 		cluster_size = 0;
@@ -100,13 +101,12 @@ namespace raft {
 						if(logs.size() > 0)
 							rpc.prev_log_term = logs[rpc.prev_log_index].term;
 						else 
-							rpc.prev_log_term = 1;
+							rpc.prev_log_term = -1;
 
 						//isi logs yang diperlukan 
 						rpc.logs.clear();
-						for(int j = next_index[i]; j < logs.size(); j++) {
-							rpc.logs.push_back(logs[j]);
-						}
+						if (next_index[i] < logs.size())
+							rpc.logs.push_back(logs[next_index[i]]);
 
 						//send the heartbeat
 						sender.Send(i, rpc);
@@ -224,7 +224,7 @@ namespace raft {
 			if (reply.success) {
 				if (next_index[reply.from_id] < logs.size())
 					next_index[reply.from_id] += 1;
-				match_index[reply.from_id] = logs.size() - 1;
+				match_index[reply.from_id] += 1;
 			} else {
 				next_index[reply.from_id] -= 1;
 			}
@@ -299,7 +299,12 @@ namespace raft {
 	void Server::ApplyLog(){
 		//commit log yang belum dicommit tp bisa dicommit
 		//dari last_applied + 1 hingga commit_index
-		for(int i = last_applied + 1; i <= min(commit_index, logs.size()); i++) {
+		int last_index = commit_index;
+		if (last_index >= logs.size()) {
+			last_index = logs.size() - 1;
+		}
+
+		for(int i = last_applied + 1; i <= last_index; i++) {
 			Log current_log = logs[i];
 
 			//if block untuk semua jenis operasi
@@ -313,7 +318,7 @@ namespace raft {
 				data = current_log.payload;
 			} 
 		}
-		last_applied = min(commit_index, logs.size());
+		last_applied = last_index;
 	}
 
 	std::ostream & operator<<(std::ostream &os, const Server& s){
