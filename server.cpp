@@ -60,23 +60,25 @@ namespace raft {
 				//server leader time_to_timeout nya 3
 				time_to_timeout = 3;
 				//kirim heartbeat ke node-node lainnya
-				for(int i = 1; i <= cluster_size && i != server_index; i++) {
-					//heartbeat
-					AppendEntriesRPC rpc;
-					rpc.term = current_term;
-					rpc.leader_id = server_index;
-					rpc.leader_commit_index = commit_index;
-					rpc.prev_log_index = next_index[i] - 1;
-					rpc.prev_log_term = logs[rpc.prev_log_index].term;
+				for(int i = 1; i <= cluster_size; i++) {
+					if (i != server_index) {
+						//heartbeat
+						AppendEntriesRPC rpc;
+						rpc.term = current_term;
+						rpc.leader_id = server_index;
+						rpc.leader_commit_index = commit_index;
+						rpc.prev_log_index = next_index[i] - 1;
+						rpc.prev_log_term = logs[rpc.prev_log_index].term;
 
-					//isi logs yang diperlukan 
-					rpc.logs.clear();
-					for(int j = next_index[i]; j < logs.size(); j++) {
-						rpc.logs.push_back(logs[j]);
+						//isi logs yang diperlukan 
+						rpc.logs.clear();
+						for(int j = next_index[i]; j < logs.size(); j++) {
+							rpc.logs.push_back(logs[j]);
+						}
+
+						//send the heartbeat
+						sender.Send(i, rpc);
 					}
-
-					//send the heartbeat
-					sender.Send(i, rpc);
 				}
 			} else if (state == State::FOLLOWER || state == State::CANDIDATE) {
 				//ganti follower jadi candidate
@@ -224,6 +226,7 @@ namespace raft {
 
 			//if has majority vote
 			if (2 * count_vote > cluster_size) {
+				//yeay kepilih jadi leader
 				state = State::LEADER;
 				time_to_timeout = 0;
 				leader = server_index;

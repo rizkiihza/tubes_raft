@@ -42,7 +42,7 @@ int main(){
 		} else if( cmd == "get_leader_state" ) {
 			std::cin >> server;
 			simulation.PrintServerLeaderState(server);
-		} else if( cmd == "get_outbox" ) {
+		} else if( cmd == "go" ) {
 			simulation.PrintOutbox();
 		} else if( cmd == "store_outbox" ){
 			std::string key;
@@ -56,7 +56,7 @@ int main(){
 			simulation.RetrieveOutbox(key);
 		} else if( cmd == "perfect_shuffle_outbox" ){
 
-		} else if( cmd == "flush_outbox" ){
+		} else if( cmd == "fo" ){
 			simulation.FlushOutbox();
 		} else if( cmd == "client" ) {
 			std::cin >> server;
