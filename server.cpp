@@ -27,6 +27,28 @@ namespace raft {
 		time_to_timeout = ttt;
 	}
 
+	//fungsi helper untuk mengirim append entries reply
+	void sendAppendEntriesReply(AppendEntriesRPC rpc, bool success) {
+		AppendEntriesReply aer;
+		aer.from_id = server_index;
+		aer.request = rpc;
+		aer.success = success;
+
+		//kirim reply
+		sender_.send(rpc.leader_id , aer);
+	}
+
+	//fungsi helper untuk mengirim request vote reply
+	void sendRequestVoteReply(RequestVoteRPC rpc, bool voted) {
+		RequestVoteReply rvr;
+		rvr.from_id = server_index;
+		rvr.request = rpc;
+		rvr.vote_granted = voted;
+
+		//kirim reply
+		sender_.send(rpc.candidate_id, rvr);
+	}
+
 	void Server::Timestep(){
 		if (time_to_timeout == 0) {
 			if (state == State::LEADER) {
@@ -56,23 +78,26 @@ namespace raft {
 
 	void Server::Receive(AppendEntriesRPC rpc){
 		//jika node merupakan follower
-		if (state = State::FOLLOWER) {
-			//kalau term dari data rpc kurang dari term server ini
+		if (state == State::FOLLOWER) {
 			if (rpc.term < current_term) {
-				//buat reply untuk dikirim ke leader
-				AppendEntriesReply aer;
-				aer.from_id = server_index;
-				aer.request = rpc;
-				aer.success = false;
+				//term dari heartbeat kurang dari term current server
 
-				//kirim reply
-				sender_.send(rpc.leader_id , aer);
-			} 
-			//term > term server ini, berarti data diproses
-			else {
-				
+				sendAppendEntriesReply(rpc, false);
+			} else if (rpc.prev_log_index >= logs.size()){
+				//current server tidak punya log dengan index prev_log_index
+
+				sendAppendEntriesReply(rpc, false);
+			} else if (logs[rpc.prev_log_index].term != rpc.prev_log_term) {
+				//term dari log dengan index prev_log_index tidak sama dengan rpc.prev_log_term
+
+				sendAppendEntriesReply(rpc, false);
+			} else if(logs[rpc.prev_log_index].term == rpc.prev_log_term){
+				//hapus logs yg conflict sama logs yang dikirim
+				for(int i = rpc.prev_log_index; i)
 			}
-		} 
+		} else if (state == State::CANDIDATE) {
+			
+		}
   	}
 
 	void Server::Receive(AppendEntriesReply reply){
