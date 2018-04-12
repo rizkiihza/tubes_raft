@@ -33,6 +33,7 @@ namespace raft {
 		//fungsi helper tambahan
 		void sendAppendEntriesReply(AppendEntriesRPC rpc, bool success);
 		void sendRequestVoteReply(RequestVoteRPC rpc, bool voted);
+		void leader_commit();
 
 		friend std::ostream & operator<<(std::ostream &os, const Server& s);
 		std::string GetLeaderStateString();

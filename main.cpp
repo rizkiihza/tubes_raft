@@ -17,14 +17,14 @@ int main(){
 
 		std::cin >> cmd;
 		// std::cout << cmd << std::endl;
-		if( cmd == "ft" ){
+		if( cmd == "force_timeout" ){
 			std::cin >> server;
 			simulation.SetTimeout(server, 0);
 		} else if( cmd == "set_timeout" ){
 			int ttt;
 			std::cin >> server >> ttt;
 			simulation.SetTimeout(server, ttt);
-		} else if( cmd == "s"){
+		} else if( cmd == "timestep"){
 			simulation.Timestep();
 		} else if( cmd == "crash" ){
 			std::cin >> server;
@@ -35,14 +35,14 @@ int main(){
 		} else if( cmd == "get_state" ){
 			std::cin >> server;
 			simulation.PrintServerState(server);
-		} else if( cmd == "gas" ){
+		} else if( cmd == "get_all_state" ){
 			for(int i = 1; i <= cluster_size; i++) {
 				simulation.PrintServerState(i);
 			}
 		} else if( cmd == "get_leader_state" ) {
 			std::cin >> server;
 			simulation.PrintServerLeaderState(server);
-		} else if( cmd == "go" ) {
+		} else if( cmd == "get_outbox" ) {
 			simulation.PrintOutbox();
 		} else if( cmd == "store_outbox" ){
 			std::string key;
@@ -56,7 +56,7 @@ int main(){
 			simulation.RetrieveOutbox(key);
 		} else if( cmd == "perfect_shuffle_outbox" ){
 
-		} else if( cmd == "fo" ){
+		} else if( cmd == "flush_outbox" ){
 			simulation.FlushOutbox();
 		} else if( cmd == "client" ) {
 			std::cin >> server;

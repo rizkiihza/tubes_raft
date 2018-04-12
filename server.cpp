@@ -16,6 +16,9 @@ namespace raft {
 		server_index = server_index_;
 		state = State::FOLLOWER;
 
+		last_applied = -1;
+		commit_index = -1;
+
 		vote_granted.clear();
 		for(int i = 0 ; i <= cluster_size; i++) {
 			vote_granted.push_back(false);
@@ -54,7 +57,32 @@ namespace raft {
 		sender.Send(rpc.candidate_id, rvr);
 	}
 
+
+	//fungsi helper untuk commit
+	void Server::leader_commit() {
+		int commit_max = -1;
+		if (state == State::LEADER) {
+			for(int lg = 0; lg < logs.size(); lg++) {
+				int count_log_available = 0;
+				for (int i = 1; i <= cluster_size; i++) {
+					if (match_index[i] >= lg) {
+						count_log_available += 1;
+					} 
+				}
+
+				if (2 * count_log_available > cluster_size) {
+					commit_max = lg;
+				}
+			}
+		}
+		commit_index = commit_max;
+		ApplyLog();
+	}
+
 	void Server::Timestep(){
+		//check log to commit in leader server
+		leader_commit();
+
 		if (time_to_timeout == 0) {
 			if (state == State::LEADER) {
 				//server leader time_to_timeout nya 3
@@ -68,7 +96,11 @@ namespace raft {
 						rpc.leader_id = server_index;
 						rpc.leader_commit_index = commit_index;
 						rpc.prev_log_index = next_index[i] - 1;
-						rpc.prev_log_term = logs[rpc.prev_log_index].term;
+
+						if(logs.size() > 0)
+							rpc.prev_log_term = logs[rpc.prev_log_index].term;
+						else 
+							rpc.prev_log_term = 1;
 
 						//isi logs yang diperlukan 
 						rpc.logs.clear();
@@ -139,6 +171,13 @@ namespace raft {
 				//reset stat
 				time_to_timeout = 5;
 				leader = rpc.leader_id;
+				commit_index = rpc.leader_commit_index;
+
+				//jika commit index ketinggalan
+				//apply log hingga commit index
+				if (commit_index > last_applied) {
+					ApplyLog();
+				}
 
 				//kalau ganti term, voted_for jadi 0 lagi
 				if (current_term < rpc.term) {
@@ -147,7 +186,14 @@ namespace raft {
 
 				current_term = rpc.term;
 
-				if (rpc.prev_log_index >= logs.size()){
+				if (rpc.prev_log_index == -1) {
+					logs.clear();
+					for(int i = 0; i < rpc.logs.size(); i++) {
+						logs.push_back(rpc.logs[i]);
+					}
+					sendAppendEntriesReply(rpc, true);
+				}
+				else if (rpc.prev_log_index >= logs.size()){
 					//current server tidak punya log dengan index prev_log_index	
 					sendAppendEntriesReply(rpc, false);
 				} else if (logs[rpc.prev_log_index].term != rpc.prev_log_term) {
@@ -176,7 +222,8 @@ namespace raft {
 	void Server::Receive(AppendEntriesReply reply){ 
 		if(state == State::LEADER) {
 			if (reply.success) {
-				next_index[reply.from_id] += 1;
+				if (next_index[reply.from_id] < logs.size())
+					next_index[reply.from_id] += 1;
 				match_index[reply.from_id] = reply.request.logs.size() - 1;
 			} else {
 				next_index[reply.from_id] -= 1;
@@ -242,6 +289,8 @@ namespace raft {
   	void Server::Receive(Log mLog){
 		// receive client request
   		if( state == State::LEADER ){
+			next_index[server_index] = logs.size();
+			match_index[server_index] = logs.size() - 1;
   			mLog.term = current_term;
   			logs.push_back(mLog);
   		} 
@@ -249,7 +298,7 @@ namespace raft {
 
 	void Server::ApplyLog(){
 		//commit log yang belum dicommit tp bisa dicommit
-		//dari last_applid + 1 hingga commit_index
+		//dari last_applied + 1 hingga commit_index
 		for(int i = last_applied + 1; i <= commit_index; i++) {
 			Log current_log = logs[i];
 
@@ -264,6 +313,7 @@ namespace raft {
 				data = current_log.payload;
 			} 
 		}
+		last_applied = commit_index;
 	}
 
 	std::ostream & operator<<(std::ostream &os, const Server& s){
