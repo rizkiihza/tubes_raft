@@ -49,6 +49,7 @@ namespace raft {
 		sender.Send(rpc.candidate_id, rvr);
 	}
 
+	//BELUM KELAR
 	void Server::Timestep(){
 		if (time_to_timeout == 0) {
 			if (state == State::LEADER) {
@@ -79,6 +80,8 @@ namespace raft {
 	void Server::Receive(AppendEntriesRPC rpc){
 		//jika node merupakan follower
 		if (state == State::FOLLOWER) {
+
+
 			if (rpc.term < current_term) {
 				//term dari heartbeat kurang dari term current server
 
@@ -92,18 +95,20 @@ namespace raft {
 
 				sendAppendEntriesReply(rpc, false);
 			} else if(logs[rpc.prev_log_index].term == rpc.prev_log_term){
+
 				//hapus logs yg conflict sama logs yang dikirim
 				for(int i = rpc.prev_log_index + 1; i < logs.size(); i++) {
-					if (logs[i].term != rpc.logs[i - rpc.prev_log_index].term) {
-						logs[i] = rpc.logs[i - rpc.prev_log_index];
-					}
+					logs.erase(logs.begin()+i);
 				}
 
+				//tambahkan log yang index nya lebih dari logs.size()
+				for(int i = 0;i <  rpc.logs.size(); i++) {
+					logs.push_back(rpc.logs[i]);
+				}
 
+				sendAppendEntriesReply(rpc, true);
 			}
-		} else if (state == State::CANDIDATE) {
-
-		}
+		} 
   	}
 
 	void Server::Receive(AppendEntriesReply reply){
