@@ -299,7 +299,7 @@ namespace raft {
 	void Server::ApplyLog(){
 		//commit log yang belum dicommit tp bisa dicommit
 		//dari last_applied + 1 hingga commit_index
-		for(int i = last_applied + 1; i <= commit_index; i++) {
+		for(int i = last_applied + 1; i <= min(commit_index, logs.size()); i++) {
 			Log current_log = logs[i];
 
 			//if block untuk semua jenis operasi
@@ -313,7 +313,7 @@ namespace raft {
 				data = current_log.payload;
 			} 
 		}
-		last_applied = commit_index;
+		last_applied = min(commit_index, logs.size());
 	}
 
 	std::ostream & operator<<(std::ostream &os, const Server& s){
