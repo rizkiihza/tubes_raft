@@ -45,6 +45,9 @@ namespace raft {
 		int server_index;
 		int data;
 
+		//variable tambahan leader untuk menyimpan current_leader
+		int leader;
+
 		// volatile state
 		int commit_index;
 		int last_applied;
