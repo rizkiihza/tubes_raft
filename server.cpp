@@ -62,8 +62,12 @@ namespace raft {
 	//fungsi helper untuk commit
 	void Server::leader_commit() {
 		int commit_max = -1;
+
+		//jika leader
 		if (state == State::LEADER) {
 			for(int lg = 0; lg < logs.size(); lg++) {
+
+				//hitung jumlah node yang memiliki log ini
 				int count_log_available = 0;
 				for (int i = 1; i <= cluster_size; i++) {
 					if (match_index[i] >= lg) {
@@ -71,6 +75,7 @@ namespace raft {
 					} 
 				}
 
+				//jika log dimiliki oleh mayoritas
 				if (2 * count_log_available > cluster_size) {
 					commit_max = lg;
 				}
@@ -186,6 +191,8 @@ namespace raft {
 
 				current_term = rpc.term;
 
+				//tandanya sudah paling rendah, tidak ada yang sama
+				//langsung isi dengan log yang datang
 				if (rpc.prev_log_index == -1) {
 					logs.clear();
 					for(int i = 0; i < rpc.logs.size(); i++) {
