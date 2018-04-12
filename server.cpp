@@ -15,6 +15,11 @@ namespace raft {
 		cluster_size = cluster_size_;
 		server_index = server_index_;
 		state = State::FOLLOWER;
+
+		vote_granted.clear();
+		for(int i = 0 ; i <= cluster_size; i++) {
+			vote_granted.push_back(false);
+		}
 	}
 
 	void Server::Crash(){
@@ -54,7 +59,6 @@ namespace raft {
 			if (state == State::LEADER) {
 				//server leader time_to_timeout nya 3
 				time_to_timeout = 3;
-
 				//kirim heartbeat ke node-node lainnya
 				for(int i = 1; i <= cluster_size && i != server_index; i++) {
 					//heartbeat
@@ -83,16 +87,22 @@ namespace raft {
 				voted_for = server_index;
 
 				//give request vote to all node
-				for(int i = 1; i <= cluster_size && i != server_index; i++) {
-					//create request vote objects
-					RequestVoteRPC rpc;
-					rpc.term = current_term;
-					rpc.candidate_id = server_index;
-					rpc.last_log_index = logs.size() - 1;
-					rpc.last_log_term = logs[logs.size() - 1].term;
+				for(int i = 1; i <= cluster_size; i++) {
+					if (i != server_index) {
+						//create request vote objects
+						RequestVoteRPC rpc;
+						rpc.term = current_term;
+						rpc.candidate_id = server_index;
+						rpc.last_log_index = logs.size() - 1;
 
-					//send the request vote
-					sender.Send(i, rpc);
+						if (logs.size() > 0)
+							rpc.last_log_term = logs[logs.size() - 1].term;
+						else
+							rpc.last_log_term = 1;
+
+						//send the request vote
+						sender.Send(i, rpc);
+					}
 				}
 
 				//inisiasi untuk vector vote_granted
@@ -130,7 +140,7 @@ namespace raft {
 
 				//kalau ganti term, voted_for jadi 0 lagi
 				if (current_term < rpc.term) {
-					voted_for = 0;
+					voted_for = -1;
 				}
 
 				current_term = rpc.term;
@@ -180,7 +190,7 @@ namespace raft {
 			if (state == State::LEADER) {
 				sendRequestVoteReply(rpc, false);
 			} else {
-				if (voted_for == 0 || voted_for == rpc.candidate_id) {
+				if (voted_for == -1 || voted_for == rpc.candidate_id) {
 					sendRequestVoteReply(rpc, true);
 					voted_for = rpc.candidate_id;
 				}
@@ -213,9 +223,10 @@ namespace raft {
 			}
 
 			//if has majority vote
-			if (2*count_vote > cluster_size) {
+			if (2 * count_vote > cluster_size) {
 				state = State::LEADER;
 				time_to_timeout = 0;
+				leader = server_index;
 
 				for(int i = 1; i <= cluster_size; i++) {
 					next_index[i] = logs.size();
@@ -289,6 +300,10 @@ namespace raft {
 				  << "voted_for:" << s.voted_for << "\n"
 				  << "commit_index:" << s.commit_index << "\n"
 				  << "data:" << s.data << "\n"
+
+				 //hapus sebelum kumpul
+				  << "time to timeout:" << s.time_to_timeout << "\n" 
+
 				  << "logs:\n" << log_str.str();
 		return os;
 	}

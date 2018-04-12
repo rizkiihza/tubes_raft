@@ -16,14 +16,15 @@ int main(){
 		int server;
 
 		std::cin >> cmd;
-		if( cmd == "force_timeout" ){
+		// std::cout << cmd << std::endl;
+		if( cmd == "ft" ){
 			std::cin >> server;
 			simulation.SetTimeout(server, 0);
 		} else if( cmd == "set_timeout" ){
 			int ttt;
 			std::cin >> server >> ttt;
 			simulation.SetTimeout(server, ttt);
-		} else if( cmd == "timestep"){
+		} else if( cmd == "s"){
 			simulation.Timestep();
 		} else if( cmd == "crash" ){
 			std::cin >> server;
@@ -34,6 +35,10 @@ int main(){
 		} else if( cmd == "get_state" ){
 			std::cin >> server;
 			simulation.PrintServerState(server);
+		} else if( cmd == "gas" ){
+			for(int i = 1; i <= cluster_size; i++) {
+				simulation.PrintServerState(i);
+			}
 		} else if( cmd == "get_leader_state" ) {
 			std::cin >> server;
 			simulation.PrintServerLeaderState(server);
@@ -53,7 +58,7 @@ int main(){
 
 		} else if( cmd == "flush_outbox" ){
 			simulation.FlushOutbox();
-		} else if( cmd == "client_send_request" ) {
+		} else if( cmd == "client" ) {
 			std::cin >> server;
 
 			raft::Log log;
