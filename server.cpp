@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 namespace raft {
+
 	Server::Server(){
 		cluster_size = 0;
 		server_index = 0;
@@ -65,6 +66,7 @@ namespace raft {
 		if (state == State::LEADER) {
 			int commit_max = -1;
 
+			//untuk tiap log yang ada pada leader
 			for(int lg = 0; lg < logs.size(); lg++) {
 
 				//hitung jumlah node yang memiliki log ini
@@ -80,7 +82,8 @@ namespace raft {
 					commit_max = lg;
 				}
 			}
-
+			//commit index menjadi log dengan index tertinggi
+			//yang dimiliki mayoritas server
 			commit_index = commit_max;
 			ApplyLog();
 		}
