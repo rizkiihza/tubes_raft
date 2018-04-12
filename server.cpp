@@ -28,25 +28,25 @@ namespace raft {
 	}
 
 	//fungsi helper untuk mengirim append entries reply
-	void sendAppendEntriesReply(AppendEntriesRPC rpc, bool success) {
+	void Server::sendAppendEntriesReply(AppendEntriesRPC rpc, bool success) {
 		AppendEntriesReply aer;
 		aer.from_id = server_index;
 		aer.request = rpc;
 		aer.success = success;
 
 		//kirim reply
-		sender_.send(rpc.leader_id , aer);
+		sender.Send(rpc.leader_id , aer);
 	}
 
 	//fungsi helper untuk mengirim request vote reply
-	void sendRequestVoteReply(RequestVoteRPC rpc, bool voted) {
+	void Server::sendRequestVoteReply(RequestVoteRPC rpc, bool voted) {
 		RequestVoteReply rvr;
 		rvr.from_id = server_index;
 		rvr.request = rpc;
 		rvr.vote_granted = voted;
 
 		//kirim reply
-		sender_.send(rpc.candidate_id, rvr);
+		sender.Send(rpc.candidate_id, rvr);
 	}
 
 	void Server::Timestep(){
@@ -58,7 +58,7 @@ namespace raft {
 				for(int i = 1; i <= cluster_size; i++) {
 					//general part
 					AppendEntriesRPC rpc;
-					rpc.term = term;
+					rpc.term = current_term;
 					rpc.leader_id = server_index;
 					rpc.leader_commit_index = commit_index;
 
@@ -93,10 +93,16 @@ namespace raft {
 				sendAppendEntriesReply(rpc, false);
 			} else if(logs[rpc.prev_log_index].term == rpc.prev_log_term){
 				//hapus logs yg conflict sama logs yang dikirim
-				for(int i = rpc.prev_log_index; i)
+				for(int i = rpc.prev_log_index + 1; i < logs.size(); i++) {
+					if (logs[i].term != rpc.logs[i - rpc.prev_log_index].term) {
+						logs[i] = rpc.logs[i - rpc.prev_log_index];
+					}
+				}
+
+
 			}
 		} else if (state == State::CANDIDATE) {
-			
+
 		}
   	}
 

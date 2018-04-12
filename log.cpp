@@ -5,6 +5,5 @@ namespace raft {
 		operation = Operation::NOTHING;
 		payload = 0;
 		term = 0;
-
 	}
 }
