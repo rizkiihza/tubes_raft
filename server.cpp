@@ -180,9 +180,9 @@ namespace raft {
 			if (state == State::LEADER) {
 				sendRequestVoteReply(rpc, false);
 			} else {
-				if (voted_for == 0 || voted_for == candidate_id) {
+				if (voted_for == 0 || voted_for == rpc.candidate_id) {
 					sendRequestVoteReply(rpc, true);
-					voted_for = candidate_id;
+					voted_for = rpc.candidate_id;
 				}
 			}
 		} else if (current_term < rpc.term) {
