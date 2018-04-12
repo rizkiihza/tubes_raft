@@ -224,7 +224,7 @@ namespace raft {
 			if (reply.success) {
 				if (next_index[reply.from_id] < logs.size())
 					next_index[reply.from_id] += 1;
-				match_index[reply.from_id] += 1;
+				match_index[reply.from_id] = reply.request.prev_log_index + reply.request.logs.size();
 			} else {
 				next_index[reply.from_id] -= 1;
 			}
