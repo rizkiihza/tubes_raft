@@ -64,7 +64,7 @@ namespace raft {
 		//jika leader
 		if (state == State::LEADER) {
 			int commit_max = -1;
-			
+
 			for(int lg = 0; lg < logs.size(); lg++) {
 
 				//hitung jumlah node yang memiliki log ini
@@ -181,7 +181,6 @@ namespace raft {
 				//apply log hingga commit index
 				if (commit_index > last_applied) {
 					ApplyLog();
-					std::cout << "lebih woy\n";
 				}
 
 				//kalau ganti term, voted_for jadi 0 lagi
@@ -308,7 +307,7 @@ namespace raft {
 		//dari last_applied + 1 hingga commit_index
 
 		int starting = last_applied;
-		for(int i = starting+1; i <= commit_index && i <= logs.size() - 1) ; i++) {
+		for(int i = starting+1; i <= commit_index && i < logs.size(); i++) {
 			Log current_log = logs[i];
 			
 			//if block untuk semua jenis operasi
