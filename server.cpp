@@ -224,7 +224,7 @@ namespace raft {
 			if (reply.success) {
 				if (next_index[reply.from_id] < logs.size())
 					next_index[reply.from_id] += 1;
-				match_index[reply.from_id] = reply.request.logs.size() - 1;
+				match_index[reply.from_id] = logs.size() - 1;
 			} else {
 				next_index[reply.from_id] -= 1;
 			}
@@ -289,10 +289,10 @@ namespace raft {
   	void Server::Receive(Log mLog){
 		// receive client request
   		if( state == State::LEADER ){
+			mLog.term = current_term;
+			logs.push_back(mLog);
 			next_index[server_index] = logs.size();
 			match_index[server_index] = logs.size() - 1;
-  			mLog.term = current_term;
-  			logs.push_back(mLog);
   		} 
   	}
 
