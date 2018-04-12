@@ -49,16 +49,15 @@ namespace raft {
 		sender.Send(rpc.candidate_id, rvr);
 	}
 
-	//BELUM KELAR
 	void Server::Timestep(){
 		if (time_to_timeout == 0) {
 			if (state == State::LEADER) {
 				//server leader time_to_timeout nya 3
 				time_to_timeout = 3;
 
-				//send heartbeat to all other nodes
+				//kirim heartbeat ke node-node lainnya
 				for(int i = 1; i <= cluster_size && i != server_index; i++) {
-					//create heartbeat rpc object
+					//heartbeat
 					AppendEntriesRPC rpc;
 					rpc.term = current_term;
 					rpc.leader_id = server_index;
@@ -75,11 +74,13 @@ namespace raft {
 					//send the heartbeat
 					sender.Send(i, rpc);
 				}
-			} else if (state == State::FOLLOWER) {
+			} else if (state == State::FOLLOWER || state == State::CANDIDATE) {
 				//ganti follower jadi candidate
 				//start election
 				time_to_timeout = 5;
+				current_term += 1;
 				state = State::CANDIDATE;
+				voted_for = server_index;
 
 				//give request vote to all node
 				for(int i = 1; i <= cluster_size && i != server_index; i++) {
@@ -93,8 +94,14 @@ namespace raft {
 					//send the request vote
 					sender.Send(i, rpc);
 				}
+
+				//inisiasi untuk vector vote_granted
+				for(int i = 0; i <= cluster_size; i++) {
+					vote_granted[i] = false;
+				}
+				vote_granted[server_index] = true;
 			}
-		} else {
+		} else if (time_to_timeout != 0) {
 			//satu langkah menuju timeout
 			time_to_timeout--;
 		}
@@ -104,53 +111,118 @@ namespace raft {
 		//jika node merupakan follower atau candidate
 		if (state == State::FOLLOWER || state == State::CANDIDATE) {
 
-			//candidate jika menerma rpc akan berubah jadi follower
-			if (state == State::CANDIDATE) {
-				state = State::FOLLOWER;
-			}
-
 			//update variable yg perlu di update
-			time_to_timeout = 5;
-			leader = rpc.leader_id;
+			
 
 			if (rpc.term < current_term) {
 				//term dari heartbeat kurang dari term current server
-
 				sendAppendEntriesReply(rpc, false);
-			} else if (rpc.prev_log_index >= logs.size()){
-				//current server tidak punya log dengan index prev_log_index
-
-				sendAppendEntriesReply(rpc, false);
-			} else if (logs[rpc.prev_log_index].term != rpc.prev_log_term) {
-				//term dari log dengan index prev_log_index tidak sama dengan rpc.prev_log_term
-
-				sendAppendEntriesReply(rpc, false);
-			} else if(logs[rpc.prev_log_index].term == rpc.prev_log_term){
-
-				//hapus logs yg conflict sama logs yang dikirim
-				for(int i = rpc.prev_log_index + 1; i < logs.size(); i++) {
-					logs.erase(logs.begin() + i);
+			} else { 
+				//candidate jika menerma rpc dengan term >= term dia
+				//akan berubah jadi follower
+				if (state == State::CANDIDATE) {
+					state = State::FOLLOWER;
 				}
 
-				//tambahkan log yang index nya lebih dari logs.size()
-				for(int i = 0; i <  rpc.logs.size(); i++) {
-					logs.push_back(rpc.logs[i]);
+				//reset stat
+				time_to_timeout = 5;
+				leader = rpc.leader_id;
+
+				//kalau ganti term, voted_for jadi 0 lagi
+				if (current_term < rpc.term) {
+					voted_for = 0;
 				}
 
-				sendAppendEntriesReply(rpc, true);
+				current_term = rpc.term;
+
+				if (rpc.prev_log_index >= logs.size()){
+					//current server tidak punya log dengan index prev_log_index	
+					sendAppendEntriesReply(rpc, false);
+				} else if (logs[rpc.prev_log_index].term != rpc.prev_log_term) {
+					//term dari log dengan index prev_log_index tidak sama dengan rpc.prev_log_term
+					sendAppendEntriesReply(rpc, false);
+				} else if(logs[rpc.prev_log_index].term == rpc.prev_log_term){
+					//hapus logs yg conflict sama logs yang dikirim
+					for(int i = rpc.prev_log_index + 1; i < logs.size(); i++) {
+						logs.erase(logs.begin() + i);
+					}
+
+					//tambahkan log yang index nya lebih dari logs.size()
+					for(int i = 0; i <  rpc.logs.size(); i++) {
+						logs.push_back(rpc.logs[i]);
+					}
+
+					sendAppendEntriesReply(rpc, true);
+				}
 			}
 		} 
   	}
 
-	void Server::Receive(AppendEntriesReply reply){
 
+	//klo sukses : match_index jadi log terakhir yang dikirim
+	//klo gagal : next_index dikurangi satu
+	void Server::Receive(AppendEntriesReply reply){ 
+		if(state == State::LEADER) {
+			if (reply.success) {
+				next_index[reply.from_id] += 1;
+				match_index[reply.from_id] = reply.request.logs.size() - 1;
+			} else {
+				next_index[reply.from_id] -= 1;
+			}
+		}
 	}
 
   	void Server::Receive(RequestVoteRPC rpc){
-		  
-  	}
+		if (current_term > rpc.term) {
+			sendRequestVoteReply(rpc, false);			
+		} else if (current_term == rpc.term) {
+			//jika leader, tolak request vote yg term sama
+			if (state == State::LEADER) {
+				sendRequestVoteReply(rpc, false);
+			} else {
+				if (voted_for == 0 || voted_for == candidate_id) {
+					sendRequestVoteReply(rpc, true);
+					voted_for = candidate_id;
+				}
+			}
+		} else if (current_term < rpc.term) {
+			//rubah leader jadi follower
+			//jika term kurang dari rpc.term
+			if (state == State::LEADER) {
+				state = State::FOLLOWER;
+			} 
+
+			voted_for = rpc.candidate_id;
+			current_term = rpc.term;
+			sendRequestVoteReply(rpc, true);
+		}
+  	}	
 
 	void Server::Receive(RequestVoteReply reply){
+		if (state == State::CANDIDATE) {
+			if (reply.vote_granted) {
+				vote_granted[reply.from_id] = true;
+			}
+			
+			//count the vote
+			int count_vote = 0;
+			for (int i = 1; i <= cluster_size; i++) {
+				if(vote_granted[i]) {
+					count_vote += 1;
+				}
+			}
+
+			//if has majority vote
+			if (2*count_vote > cluster_size) {
+				state = State::LEADER;
+				time_to_timeout = 0;
+
+				for(int i = 1; i <= cluster_size; i++) {
+					next_index[i] = logs.size();
+					match_index[i] = -1;				
+				}
+			}
+		}
   	}
 
   	void Server::Receive(Log mLog){
@@ -235,7 +307,7 @@ namespace raft {
 
 		ss << "match_index:[";
 		for( int i = 1; i <= cluster_size; ++ i ){
-			ss << next_index[i] << " ";
+			ss << match_index[i] << " ";
 		}
 		ss << "]";
 		return ss.str();
