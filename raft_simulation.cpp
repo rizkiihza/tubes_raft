@@ -2,15 +2,17 @@
 
 namespace raft {
 	RaftSimulation::RaftSimulation(int cluster_size_){
+
 		cluster_size = cluster_size_;
 		servers.resize(cluster_size+1);
 		server_online.resize(cluster_size+1);
-		for( int i = 1; i <= cluster_size; ++ i ){
+		
+		for( int i = 1; i <= cluster_size; ++i ){
 			servers[i] = Server( cluster_size, i, Sender(this,i) );
 			server_online[i] = true;
 		}
 		
-		for( int i = 1; i <= cluster_size; ++ i ){
+		for( int i = 1; i <= cluster_size; ++i ){
 			for( int k = 1; k <= cluster_size; ++ k ){
 				Connect(i,k);
 			}
@@ -19,38 +21,38 @@ namespace raft {
 		mailbox_index = 0;
 	}
 
-	void RaftSimulation::Connect(int a, int b){
+	void RaftSimulation::Connect(int a, int b) {
 		connection_matrix[ std::make_pair(a,b) ] = true;
 		connection_matrix[ std::make_pair(b,a) ] = true;
 	}
 
-	void RaftSimulation::Disconnect(int a, int b){
+	void RaftSimulation::Disconnect(int a, int b) {
 		connection_matrix[ std::make_pair(a,b) ] = false;
 		connection_matrix[ std::make_pair(b,a) ] = false;
 	}
 
-	void RaftSimulation::Crash(int a){
+	void RaftSimulation::Crash(int a) {
 		server_online[a] = false;
 		servers[a].Crash();
 	}
 
-	void RaftSimulation::Start(int server_index){
+	void RaftSimulation::Start(int server_index) {
 		server_online[server_index] = true;
 	}
 
-	void RaftSimulation::SetTimeout(int a, int ttt){
+	void RaftSimulation::SetTimeout(int a, int ttt) {
 		servers[a].SetTimeout(ttt);
 	}
 
 	void RaftSimulation::Timestep(){
-		for( int i = 1; i <= cluster_size; ++ i ){
+		for( int i = 1; i <= cluster_size; ++ i ) {
 			if( !server_online[i] ) continue;
 			servers[i].Timestep();
 		}
 	}
 
 
-	void RaftSimulation::Send(int sender_id, int to, RequestVoteRPC payload){
+	void RaftSimulation::Send(int sender_id, int to, RequestVoteRPC payload) {
 		Mail mail;
 		mail.from_id = sender_id;
 		mail.to_id = to;
@@ -60,7 +62,7 @@ namespace raft {
 		mailbox.push_back( mail );
 	}
 
-	void RaftSimulation::Send(int sender_id, int to, AppendEntriesRPC payload){
+	void RaftSimulation::Send(int sender_id, int to, AppendEntriesRPC payload) {
 		Mail mail;
 		mail.from_id = sender_id;
 		mail.to_id = to;
@@ -70,7 +72,7 @@ namespace raft {
 		mailbox.push_back( mail );
 	}
 
-	void RaftSimulation::Send(int sender_id, int to, RequestVoteReply payload){
+	void RaftSimulation::Send(int sender_id, int to, RequestVoteReply payload) {
 		Mail mail;
 		mail.from_id = sender_id;
 		mail.to_id = to;

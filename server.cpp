@@ -28,6 +28,28 @@ namespace raft {
 	}
 
 	void Server::Timestep(){
+		if (time_to_timeout == 0) {
+			if (state == State::LEADER) {
+				time_to_timeout = 3;
+
+				//send heartbeat to all ndoes
+				for(int i = 1; i <= cluster_size; i++) {
+					//general part
+					AppendEntriesRPC rpc;
+					rpc.term = term;
+					rpc.leader_id = server_index;
+					rpc.leader_commit_index = commit_index;
+
+					//logs part
+					
+				}
+			} else {
+				//start election
+				state = State::CANDIDATE;
+
+				//give request vote to all node
+			}
+		}
 		//satu langkah menuju timeout
 		time_to_timeout--;
 	}
@@ -48,35 +70,17 @@ namespace raft {
 			} 
 			//term > term server ini, berarti data diproses
 			else {
-				//update term of current node
-				current_term = rpc.term;
-				if (rpc.logs != NULL) {
-					//jika logs current server belum lengkap, update current logs
-					int this_log_size = logs.size();
-					int rpc_log_size = rpc.logs.size();
-
-					if (this_log_size < rpc_log_size) {
-						for(int i = this_log_size - 1; i < rpc_log_size; i++) {
-							logs.push_back(rpc.logs[i]);
-						}
-					}
-				}
-
-				//create reply untuk dikirim kepada server leader
-				AppenEntriesReply aer;
-				aer.from_id = server_index;
-				aer.request = rpc;
-				aer.success = true;
-
-				sender_.send(rpc.leader_id, aer);
+				
 			}
 		} 
   	}
 
 	void Server::Receive(AppendEntriesReply reply){
+
 	}
 
   	void Server::Receive(RequestVoteRPC rpc){
+		  
   	}
 
 	void Server::Receive(RequestVoteReply reply){
@@ -87,7 +91,10 @@ namespace raft {
   		if( state == State::LEADER ){
   			log.term = current_term;
   			logs.push_back(log);
-  		}
+  		} else {
+			  //if not leader, notify leader
+
+		  }
   	}
 
 	void Server::ApplyLog(){

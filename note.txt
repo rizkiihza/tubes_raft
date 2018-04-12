@@ -1,0 +1,10 @@
+things to remember:
+1. Kalau log udah mayoritas, commit. Commit adalah apply log ke data2 pada server
+2. next index diinisiasi dengan nilai log terbesar leader + 1.
+3. jika fail, kurangi next index dengan 1
+3. match index diiniasi dengan 0, jika ada match maka rubah match index dengan index yg match
+
+//halaman 4 dari pdf
+apply log di receive
+jangan send heartbeat di received: kirim di timestep
+ngirim heartbeat berurutan
