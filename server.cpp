@@ -186,10 +186,10 @@ namespace raft {
 					ApplyLog();
 				}
 
-				//kalau ganti term, voted_for jadi 0 lagi
+				//kalau ganti term, voted_for jadi -1 lagi
 				if (current_term < rpc.term) {
 					voted_for = -1;
-				}
+				}	
 
 				current_term = rpc.term;
 
@@ -365,16 +365,16 @@ namespace raft {
 				  << "term:" << s.current_term << "\n" 
 				  << "voted_for:" << s.voted_for << "\n"
 				  << "commit_index:" << s.commit_index << "\n"
+				  << "data:" << s.data << "\n"
+				  << "logs:\n" << log_str.str();
 
+				  //extra info
 				  //hapus sebelum kumpul
 				  << "last_applied:" << s.last_applied << "\n"
-
-				  << "data:" << s.data << "\n"
-
 				 //hapus sebelum kumpul
 				  << "time to timeout:" << s.time_to_timeout << "\n" 
 
-				  << "logs:\n" << log_str.str();
+				  
 		return os;
 	}
 
