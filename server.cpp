@@ -249,6 +249,7 @@ namespace raft {
 				sendRequestVoteReply(rpc, false);
 			} else {
 				if (voted_for == -1 || voted_for == rpc.candidate_id) {
+					//voted for menjadi candidate id
 					voted_for = rpc.candidate_id;
 					sendRequestVoteReply(rpc, true);
 				}
@@ -260,6 +261,7 @@ namespace raft {
 				state = State::FOLLOWER;
 			} 
 
+			//voted for menjadi candidate id
 			voted_for = rpc.candidate_id;
 			current_term = rpc.term;
 			sendRequestVoteReply(rpc, true);
@@ -366,13 +368,13 @@ namespace raft {
 				  << "voted_for:" << s.voted_for << "\n"
 				  << "commit_index:" << s.commit_index << "\n"
 				  << "data:" << s.data << "\n"
-				  << "logs:\n" << log_str.str();
+				  << "logs:\n" << log_str.str()
 
 				  //extra info
 				  //hapus sebelum kumpul
 				  << "last_applied:" << s.last_applied << "\n"
 				 //hapus sebelum kumpul
-				  << "time to timeout:" << s.time_to_timeout << "\n" 
+				  << "time to timeout:" << s.time_to_timeout << "\n" ;	
 
 				  
 		return os;
