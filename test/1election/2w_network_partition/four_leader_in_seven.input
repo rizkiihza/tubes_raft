@@ -1,0 +1,56 @@
+7
+set_timeout 1 0
+simulate 10
+disconnect 1 2
+disconnect 1 3
+disconnect 1 4
+disconnect 1 5
+disconnect 1 6
+disconnect 1 7
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+get_role 6
+get_role 7
+set_timeout 2 0
+simulate 10
+disconnect 2 3
+disconnect 2 4
+disconnect 2 5
+disconnect 2 6
+disconnect 2 7
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+get_role 6
+get_role 7
+set_timeout 3 0
+simulate 10
+disconnect 3 4
+disconnect 3 5
+disconnect 3 6
+disconnect 3 7
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+get_role 6
+get_role 7
+set_timeout 4 0
+simulate 10
+disconnect 4 5
+disconnect 4 6
+disconnect 4 7
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+get_role 6
+get_role 7
+end_simulation

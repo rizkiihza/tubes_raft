@@ -1,0 +1,23 @@
+5
+set_timeout 1 0
+simulate 10
+client_send_request 1 + 5
+client_send_request 1 * 5
+client_send_request 1 - 2
+crash 1
+set_timeout 2 0
+simulate 100
+get_leader_state 2
+get_data 2
+get_data 3
+get_data 4
+get_data 5
+restart 1
+simulate 100
+get_leader_state 2
+get_data 1
+get_data 2
+get_data 3
+get_data 4
+get_data 5
+end_simulation

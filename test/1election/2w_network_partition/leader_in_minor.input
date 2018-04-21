@@ -1,0 +1,28 @@
+5
+set_timeout 5 0
+simulate 10
+disconnect 1 3
+disconnect 1 4
+disconnect 1 5
+disconnect 2 3
+disconnect 2 4
+disconnect 2 5
+simulate 100
+connect 1 3
+connect 1 4
+connect 1 5
+connect 2 3
+connect 2 4
+connect 2 5
+set_timeout 1 0
+timestep
+get_role 1
+flush_outbox
+timestep
+flush_outbox
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+end_simulation

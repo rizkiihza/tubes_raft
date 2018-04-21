@@ -1,0 +1,19 @@
+5
+set_timeout 2 0
+timestep
+flush_outbox
+crash 2
+set_timeout 4 0
+simulate 10
+get_role 1
+get_role 3
+get_role 4
+get_role 5
+restart 2
+simulate 9
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+end_simulation

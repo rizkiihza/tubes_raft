@@ -1,2 +1,5 @@
-make :
-	g++ -o raft -I . main.cpp log.cpp raft_simulation.cpp sender.cpp server.cpp mail.cpp
+all: raft t
+raft:
+	./compile.sh
+t:
+	./test.sh

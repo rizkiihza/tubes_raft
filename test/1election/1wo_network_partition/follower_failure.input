@@ -1,0 +1,29 @@
+5
+set_timeout 2 0
+simulate 10
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+crash 1
+crash 3
+crash 4
+crash 5
+simulate 100
+restart 1
+restart 3
+restart 4
+restart 5
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+simulate 10
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+end_simulation
