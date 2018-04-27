@@ -5,8 +5,8 @@ namespace raft {
 	Server::Server(){
 		cluster_size = 0;
 		server_index = 0;
-	    last_applied = 0;
-	    commit_index = 0;
+	    last_applied = -1;
+	    commit_index = -1;
 	    data = 0;
 	    time_to_timeout = 5;
 	    voted_for = -1;
@@ -320,6 +320,25 @@ namespace raft {
   	}
 
 	void Server::ApplyLog(){
+		//commit log yang belum dicommit tp bisa dicommit
+		//dari last_applied + 1 hingga commit_index
+
+		int starting = last_applied;
+		for(int i = starting; i <= commit_index && i < logs.size(); i++) {
+			Log current_log = logs[i];
+			
+			//if block untuk semua jenis operasi
+			if (current_log.operation == Operation::ADD) {
+				data = data + current_log.payload;
+			} else if (current_log.operation == Operation::SUBTRACT) {
+				data = data - current_log.payload;
+			} else if (current_log.operation == Operation::MULTIPLY) {
+				data = data * current_log.payload;
+			} else if (current_log.operation == Operation::REPLACE) {
+				data = current_log.payload;
+			}
+			last_applied += 1; 
+		}
 	}
 
 
@@ -335,9 +354,7 @@ namespace raft {
 				  << "voted_for:" << s.voted_for << " "
 				  << "commit_index:" << s.commit_index << " "
 				  << "data:" << s.data << " "
-				  << "logs:" << log_str << " "
-				  << "voted_for:" << s.voted_for << " "
-				  << "timeout" << s.time_to_timeout;
+				  << "logs:" << log_str << " ";
 		return os;
 	}
 
