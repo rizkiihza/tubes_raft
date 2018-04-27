@@ -30,6 +30,11 @@ namespace raft {
 		void Receive(RequestVoteRPC);
 		void Receive(Log);
 
+		//helper
+		void sendAppendEntriesReply(AppendEntriesRPC rpc, bool success);
+		void sendRequestVoteReply(RequestVoteRPC rpc, bool voted);
+		void leader_commit();
+
 		friend std::ostream & operator<<(std::ostream &os, const Server& s);
 		std::string GetLeaderStateString() const;
 		std::string GetRoleString() const;
@@ -44,6 +49,9 @@ namespace raft {
 		int cluster_size;
 		int server_index;
 		int data;
+
+		//variable tambahan leader untuk menyimpan current_leader
+		int leader;
 
 		// volatile state
 		int commit_index;
