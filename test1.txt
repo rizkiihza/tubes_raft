@@ -19,5 +19,4 @@ client_send_request 3 - 2
 client_send_request 3 - 2
 simulate 10
 get_state 4
-go
 end_simulation

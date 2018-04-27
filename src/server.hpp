@@ -31,7 +31,7 @@ namespace raft {
 		void Receive(Log);
 
 		//helper
-		void sendAppendEntriesReply(AppendEntriesRPC rpc, bool success);
+		void sendAppendEntriesReply(AppendEntriesRPC rpc, bool success, int term);
 		void sendRequestVoteReply(RequestVoteRPC rpc, bool voted);
 		void leader_commit();
 

@@ -19,8 +19,8 @@ namespace raft {
 	Server::Server(int cluster_size_, int server_index_, Sender sender_) : next_index(cluster_size_+1), match_index(cluster_size_+1), sender(sender_) {
 		cluster_size = 0;
 		server_index = 0;
-	    last_applied = 0;
-	    commit_index = 0;
+	    last_applied = -1;
+	    commit_index = -1;
 	    data = 0;
 	    time_to_timeout = 5;
 	    voted_for = -1;
@@ -46,12 +46,12 @@ namespace raft {
 		time_to_timeout = ttt;
 	}
 
-	void Server::sendAppendEntriesReply(AppendEntriesRPC rpc, bool success) {
+	void Server::sendAppendEntriesReply(AppendEntriesRPC rpc, bool success, int term) {
 		AppendEntriesReply aer;
 		aer.from_id = server_index;
 		aer.request = rpc;
 		aer.success = success;
-
+		aer.term = term;
 		//kirim reply
 		sender.Send(rpc.leader_id , aer);
 	}
@@ -78,19 +78,23 @@ namespace raft {
 				//hitung jumlah node yang memiliki log ini
 				int count_log_available = 0;
 				for (int i = 1; i <= cluster_size; i++) {
-					if (match_index[i] >= lg) {
-						count_log_available += 1;
-					} 
+					if (i != server_index) {
+						if (match_index[i] >= lg) {
+							count_log_available += 1;
+						} 
+					}
 				}
 
 				//jika log dimiliki oleh mayoritas
-				if (2 * count_log_available > cluster_size) {
+				if (2 * (count_log_available + 1) > cluster_size) {
 					commit_max = lg;
 				}
 			}
 			//commit index menjadi log dengan index tertinggi
 			//yang dimiliki mayoritas server
-			commit_index = commit_max;
+			if (commit_max > commit_index) {
+				commit_index = commit_max;
+			}
 			ApplyLog();
 		}
 	}
@@ -173,7 +177,7 @@ namespace raft {
 			//update variable yg perlu di update
 			if (rpc.term < current_term) {
 				//term dari heartbeat kurang da	ri term current server
-				sendAppendEntriesReply(rpc, false);
+				sendAppendEntriesReply(rpc, false, current_term);
 			} else { 
 				//candidate jika menerma rpc dengan term >= term dia
 				//akan berubah jadi follower
@@ -184,13 +188,11 @@ namespace raft {
 				//reset stat
 				time_to_timeout = 5;
 				leader = rpc.leader_id;
-				commit_index = std::min(rpc.leader_commit_index, (int) logs.size() - 1);
+				commit_index = std::min(rpc.leader_commit_index, (int) logs.size());
 
 				//jika commit index ketinggalan
 				//apply log hingga commit index
-				if (commit_index > last_applied) {
-					ApplyLog();
-				}
+				ApplyLog();
 
 				//kalau ganti term, voted_for jadi -1 lagi
 				if (current_term < rpc.term) {
@@ -206,14 +208,14 @@ namespace raft {
 					for(int i = 0; i < rpc.logs.size(); i++) {
 						logs.push_back(rpc.logs[i]);
 					}
-					sendAppendEntriesReply(rpc, true);
+					sendAppendEntriesReply(rpc, true, rpc.term);
 				}
 				else if (rpc.prev_log_index >= logs.size()){
 					//current server tidak punya log dengan index prev_log_index	
-					sendAppendEntriesReply(rpc, false);
+					sendAppendEntriesReply(rpc, false, rpc.term);
 				} else if (logs[rpc.prev_log_index].term != rpc.prev_log_term) {
 					//term dari log dengan index prev_log_index tidak sama dengan rpc.prev_log_term
-					sendAppendEntriesReply(rpc, false);
+					sendAppendEntriesReply(rpc, false, rpc.term);
 				} else if(logs[rpc.prev_log_index].term == rpc.prev_log_term){
 					//hapus logs yg conflict sama logs yang dikirim
 					for(int i = rpc.prev_log_index + 1; i < logs.size(); i++) {
@@ -225,14 +227,16 @@ namespace raft {
 						logs.push_back(rpc.logs[i]);
 					}
 
-					sendAppendEntriesReply(rpc, true);
+					sendAppendEntriesReply(rpc, true, rpc.term);
 				}
 			}
 		}
   	}
 
 	void Server::Receive(AppendEntriesReply reply){
-		if(state == State::LEADER) {
+		if(reply.term > current_term) {
+			state = State::FOLLOWER;
+		} else if(state == State::LEADER) {
 			if (reply.success) {
 				if (next_index[reply.from_id] < logs.size())
 					next_index[reply.from_id] += 1;
@@ -324,7 +328,7 @@ namespace raft {
 		//dari last_applied + 1 hingga commit_index
 
 		int starting = last_applied;
-		for(int i = starting; i <= commit_index && i < logs.size(); i++) {
+		for(int i = starting + 1; i <= commit_index && i < logs.size(); i++) {
 			Log current_log = logs[i];
 			
 			//if block untuk semua jenis operasi
@@ -350,8 +354,8 @@ namespace raft {
 
 		os << "S" << s.server_index << " "
 				  << state_str << " "
-				  << "term:" << s.current_term << " " 
-				  << "voted_for:" << s.voted_for << " "
+				  << "term:" << s.current_term << " "
+				  << "voted_for:" << s.voted_for << " " 
 				  << "commit_index:" << s.commit_index + 1<< " "
 				  << "data:" << s.data << " "
 				  << "logs:" << log_str << " ";
@@ -368,7 +372,7 @@ namespace raft {
 			if( i == server_index )
 				ss << "X ";
 			else
-				ss << next_index[i] << " ";
+				ss << next_index[i] + 1 << " ";
 		}
 		ss << "] ";
 
@@ -377,7 +381,7 @@ namespace raft {
 			if( i == server_index )
 				ss << "X ";
 			else
-				ss << match_index[i] << " ";
+				ss << match_index[i] + 1<< " ";
 		}
 		ss << "]";
 		return ss.str();
