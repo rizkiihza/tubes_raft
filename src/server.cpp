@@ -253,6 +253,10 @@ namespace raft {
 			} else {
 				if (voted_for == -1 || voted_for == rpc.candidate_id) {
 					//voted for menjadi candidate id
+					if (state == State::CANDIDATE) {
+						state = State::FOLLOWER;
+					}
+
 					voted_for = rpc.candidate_id;
 					time_to_timeout = 5;
 					sendRequestVoteReply(rpc, true);
@@ -264,6 +268,10 @@ namespace raft {
 			if (state == State::LEADER) {
 				state = State::FOLLOWER;
 			} 
+
+			if (state == State::CANDIDATE) {
+				state = State::FOLLOWER;
+			}
 
 			time_to_timeout = 5;
 
@@ -327,7 +335,8 @@ namespace raft {
 				  << "voted_for:" << s.voted_for << " "
 				  << "commit_index:" << s.commit_index << " "
 				  << "data:" << s.data << " "
-				  << "logs:" << log_str
+				  << "logs:" << log_str << " "
+				  << "voted_for:" << s.voted_for << " "
 				  << "timeout" << s.time_to_timeout;
 		return os;
 	}
