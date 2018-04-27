@@ -251,6 +251,7 @@ namespace raft {
 				next_index[reply.from_id] -= 1;
 			}
 		}
+		leader_commit();
 	}
 
   	void Server::Receive(RequestVoteRPC rpc){
@@ -312,7 +313,7 @@ namespace raft {
 				state = State::LEADER;
 				time_to_timeout = 0;
 				leader = server_index;
-
+				
 				for(int i = 1; i <= cluster_size; i++) {
 					next_index[i] = logs.size();
 					match_index[i] = -1;				
@@ -364,6 +365,7 @@ namespace raft {
 				  << "voted_for:" << s.voted_for << " " 
 				  << "commit_index:" << s.commit_index + 1<< " "
 				  << "data:" << s.data << " "
+				//   << "time_to_timeout" << s.time_to_timeout << " "
 				  << "logs:" << log_str << " ";
 		return os;
 	}
