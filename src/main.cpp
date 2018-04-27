@@ -31,8 +31,10 @@ int main(){
 			for(int i = 1; i <= cluster_size; i++) {
 				simulation.PrintServerLog(i);
 			}
-		} else if( cmd == "go	" ) {
+		} else if(cmd == "go") {
 			simulation.PrintOutbox();
+		}  else if( cmd == "fo" ){
+			simulation.FlushOutbox();
 		}
 		
 		

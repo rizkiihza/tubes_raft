@@ -244,7 +244,7 @@ namespace raft {
 	}
 
   	void Server::Receive(RequestVoteRPC rpc){
-		  if (current_term > rpc.term) {
+		if (current_term > rpc.term) {
 			sendRequestVoteReply(rpc, false);			
 		} else if (current_term == rpc.term) {
 			//jika leader, tolak request vote yg term sama
@@ -254,6 +254,7 @@ namespace raft {
 				if (voted_for == -1 || voted_for == rpc.candidate_id) {
 					//voted for menjadi candidate id
 					voted_for = rpc.candidate_id;
+					time_to_timeout = 5;
 					sendRequestVoteReply(rpc, true);
 				}
 			}
@@ -263,6 +264,8 @@ namespace raft {
 			if (state == State::LEADER) {
 				state = State::FOLLOWER;
 			} 
+
+			time_to_timeout = 5;
 
 			//voted for menjadi candidate id
 			voted_for = rpc.candidate_id;
@@ -324,8 +327,8 @@ namespace raft {
 				  << "voted_for:" << s.voted_for << " "
 				  << "commit_index:" << s.commit_index << " "
 				  << "data:" << s.data << " "
-				  << "logs:" << log_str;
-				  << "timeout" << time_to_timeout;
+				  << "logs:" << log_str
+				  << "timeout" << s.time_to_timeout;
 		return os;
 	}
 
@@ -395,6 +398,6 @@ namespace raft {
 	}
 
 	int Server::GetCommitIndex() const {
-		return commit_index;
+		return commit_index + 1;
 	}
 }

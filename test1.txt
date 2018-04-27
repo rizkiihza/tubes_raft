@@ -15,14 +15,5 @@ connect 2 3
 connect 2 4
 connect 2 5
 set_timeout 1 0
-timestep
-get_role 1
-flush_outbox
-timestep
-flush_outbox
-get_role 1
-get_role 2
-get_role 3
-get_role 4
-get_role 5
-end_simulation
+simulate 1
+gas
