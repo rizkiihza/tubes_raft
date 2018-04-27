@@ -172,7 +172,7 @@ namespace raft {
 
 			//update variable yg perlu di update
 			if (rpc.term < current_term) {
-				//term dari heartbeat kurang dari term current server
+				//term dari heartbeat kurang da	ri term current server
 				sendAppendEntriesReply(rpc, false);
 			} else { 
 				//candidate jika menerma rpc dengan term >= term dia
@@ -352,7 +352,7 @@ namespace raft {
 				  << state_str << " "
 				  << "term:" << s.current_term << " " 
 				  << "voted_for:" << s.voted_for << " "
-				  << "commit_index:" << s.commit_index << " "
+				  << "commit_index:" << s.commit_index + 1<< " "
 				  << "data:" << s.data << " "
 				  << "logs:" << log_str << " ";
 		return os;
