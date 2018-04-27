@@ -188,11 +188,11 @@ namespace raft {
 				//reset stat
 				time_to_timeout = 5;
 				leader = rpc.leader_id;
-				commit_index = std::min(rpc.leader_commit_index, (int) logs.size());
+				// commit_index = std::min(rpc.leader_commit_index, (int) logs.size());
 
-				//jika commit index ketinggalan
-				//apply log hingga commit index
-				ApplyLog();
+				// //jika commit index ketinggalan
+				// //apply log hingga commit index
+				// ApplyLog();
 
 				//kalau ganti term, voted_for jadi -1 lagi
 				if (current_term < rpc.term) {
@@ -229,6 +229,12 @@ namespace raft {
 
 					sendAppendEntriesReply(rpc, true, rpc.term);
 				}
+
+				commit_index = std::min(rpc.leader_commit_index, (int) logs.size());
+
+				//jika commit index ketinggalan
+				//apply log hingga commit index
+				ApplyLog();
 			}
 		}
   	}
