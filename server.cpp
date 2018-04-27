@@ -385,7 +385,7 @@ namespace raft {
 		std::stringstream ss;
 
 		ss << "<<LeaderServer>>\n";
-		ss << "server_index:" << server_index << "\n";
+		ss << "serve		r_index:" << server_index << "\n";
 		ss << "next_index:[";
 		for( int i = 1; i <= cluster_size; ++ i ){
 			ss << next_index[i] << " ";
