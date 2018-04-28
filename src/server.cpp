@@ -389,7 +389,7 @@ namespace raft {
 			if( i == server_index )
 				ss << "X ";
 			else
-				ss << match_index[i] + 2<< " ";
+				ss << match_index[i] + 1<< " ";
 		}
 		ss << "]";
 		return ss.str();

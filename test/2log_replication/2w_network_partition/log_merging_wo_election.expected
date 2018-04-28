@@ -1,0 +1,15 @@
+leader
+leader
+S1 leader term:2 voted_for:1 commit_index:0 data:0 logs:T0[0] T2[-10*10+5]
+S2 follower term:2 voted_for:1 commit_index:0 data:0 logs:T0[0] T2[-10*10+5]
+S3 leader term:3 voted_for:3 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+S4 follower term:3 voted_for:3 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+S5 follower term:3 voted_for:3 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+L1 next_index[X 4 1 1 1 ] match_index[X 3 0 0 0 ]
+L3 next_index[1 1 X 4 4 ] match_index[0 0 X 3 3 ]
+S1 follower term:3 voted_for:-1 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+S2 follower term:3 voted_for:-1 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+S3 leader term:3 voted_for:3 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+S4 follower term:3 voted_for:3 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+S5 follower term:3 voted_for:3 commit_index:3 data:-25 logs:T0[0] T3[-10-10-5]
+L3 next_index[4 4 X 4 4 ] match_index[3 3 X 3 3 ]

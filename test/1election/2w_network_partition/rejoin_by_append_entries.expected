@@ -1,0 +1,17 @@
+leader
+follower
+leader
+follower
+follower
+leader
+follower
+leader
+follower
+follower
+S1 candidate term:9 voted_for:1 commit_index:0 data:0 logs:T0[0]
+S2 follower term:9 voted_for:1 commit_index:0 data:0 logs:T0[0]
+S1 follower term:10 voted_for:2 commit_index:0 data:0 logs:T0[0]
+S2 leader term:10 voted_for:2 commit_index:0 data:0 logs:T0[0]
+S3 follower term:10 voted_for:2 commit_index:0 data:0 logs:T0[0]
+S4 follower term:10 voted_for:2 commit_index:0 data:0 logs:T0[0]
+S5 follower term:10 voted_for:2 commit_index:0 data:0 logs:T0[0]

@@ -1,0 +1,17 @@
+5
+set_timeout 1 0
+timestep
+set_timeout 1 0
+timestep
+set_timeout 1 0
+timestep
+set_timeout 1 0
+timestep
+set_timeout 1 0
+timestep
+set_timeout 1 0
+timestep
+flush_outbox
+flush_outbox
+get_state 1
+end_simulation

@@ -1,0 +1,61 @@
+5
+set_timeout 1 0
+simulate 10
+disconnect 1 3
+disconnect 1 4
+disconnect 1 5
+disconnect 2 3
+disconnect 2 4
+disconnect 2 5
+set_timeout 3 0
+simulate 10
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+simulate 100
+get_role 1
+get_role 2
+get_role 3
+get_role 4
+get_role 5
+set_timeout 3 1000
+set_timeout 4 1000
+set_timeout 5 1000
+set_timeout 1 5
+set_timeout 2 0
+simulate 10
+set_timeout 1 0
+set_timeout 2 5
+simulate 2
+set_timeout 1 5
+set_timeout 2 0
+simulate 2
+set_timeout 1 0
+set_timeout 2 5
+simulate 2
+set_timeout 1 5
+set_timeout 2 0
+simulate 2
+set_timeout 1 0
+set_timeout 2 5
+simulate 2
+get_state 1
+get_state 2
+connect 1 3
+connect 1 4
+connect 1 5
+connect 2 3
+connect 2 4
+connect 2 5
+set_timeout 1 1000
+set_timeout 2 0
+set_timeout 3 1000
+set_timeout 4 0
+set_timeout 5 1000
+timestep
+get_state 4
+flush_outbox
+get_state 4
+end_simulation

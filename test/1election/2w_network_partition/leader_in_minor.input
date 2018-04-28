@@ -6,7 +6,7 @@ disconnect 1 4
 disconnect 1 5
 disconnect 2 3
 disconnect 2 4
-disconnect 2 5  
+disconnect 2 5
 simulate 100
 connect 1 3
 connect 1 4
