@@ -1,0 +1,1 @@
+/media/eki/8682742D827423B91/tugas/sem6/sister/RAFT/tubes_raft/test/2log_replication/1wo_network_partition/release_no_commit_prev_leader_log_paper_hal8.expected
