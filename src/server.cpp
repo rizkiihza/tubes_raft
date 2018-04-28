@@ -106,7 +106,7 @@ namespace raft {
 		if (time_to_timeout == 0) {
 			if (state == State::LEADER) {
 				//server leader time_to_timeout nya 3
-				time_to_timeout = 3;
+				time_to_timeout = 2;
 				//kirim heartbeat ke node-node lainnya
 				for(int i = 1; i <= cluster_size; i++) {
 					if (i != server_index) {
@@ -134,7 +134,7 @@ namespace raft {
 			} else if (state == State::FOLLOWER || state == State::CANDIDATE) {
 				//ganti follower jadi candidate
 				//start election
-				time_to_timeout = 5;
+				time_to_timeout = 4;
 				current_term += 1;
 				state = State::CANDIDATE;
 				voted_for = server_index;
@@ -164,7 +164,7 @@ namespace raft {
 				}
 				vote_granted[server_index] = true;
 			}
-		} else if (time_to_timeout != 0) {
+		} else if (time_to_timeout > 0) {
 			//satu langkah menuju timeout
 			time_to_timeout--;
 		}
@@ -248,7 +248,7 @@ namespace raft {
 					next_index[reply.from_id] += 1;
 				match_index[reply.from_id] = reply.request.prev_log_index + reply.request.logs.size();
 			} else {
-				next_index[reply.from_id] -= 1;
+					next_index[reply.from_id] -= 1;
 			}
 		}
 		leader_commit();
@@ -300,7 +300,7 @@ namespace raft {
 			}
 			
 			//count the vote
-			int count_vote = 0;
+			int count_vote = 1;
 			for (int i = 1; i <= cluster_size; i++) {
 				if(vote_granted[i]) {
 					count_vote += 1;
@@ -365,7 +365,7 @@ namespace raft {
 				  << "voted_for:" << s.voted_for << " " 
 				  << "commit_index:" << s.commit_index + 1<< " "
 				  << "data:" << s.data << " "
-				//   << "time_to_timeout" << s.time_to_timeout << " "
+				//   << "time_to_timeout:" << s.time_to_timeout << " "
 				  << "logs:" << log_str << " ";
 		return os;
 	}
