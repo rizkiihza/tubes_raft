@@ -56,11 +56,12 @@ namespace raft {
 		sender.Send(rpc.leader_id , aer);
 	}
 
-	void Server::sendRequestVoteReply(RequestVoteRPC rpc, bool voted) {
+	void Server::sendRequestVoteReply(RequestVoteRPC rpc, bool voted, int term) {
 		RequestVoteReply rvr;
 		rvr.from_id = server_index;
 		rvr.request = rpc;
 		rvr.vote_granted = voted;
+		rvr.term = term;
 
 		//kirim reply
 		sender.Send(rpc.candidate_id, rvr);
@@ -254,24 +255,34 @@ namespace raft {
 		leader_commit();
 	}
 
-  	void Server::Receive(RequestVoteRPC rpc){
+	void Server::Receive(RequestVoteRPC rpc){
+		// printf("%d %d\n", current_term, rpc.term);
 		if (current_term > rpc.term) {
-			sendRequestVoteReply(rpc, false);			
+			// sendRequestVoteReply(rpc, false);			
 		} else if (current_term == rpc.term) {
 			//jika leader, tolak request vote yg term sama
+			// printf("entry\n");
 			if (state == State::LEADER) {
-				sendRequestVoteReply(rpc, false);
+				// sendRequestVoteReply(rpc, false);
 			} else {
 				if (voted_for == -1 || voted_for == rpc.candidate_id) {
 					//voted for menjadi candidate id
 					if (state == State::CANDIDATE) {
 						state = State::FOLLOWER;
 					}
-
-					voted_for = rpc.candidate_id;
-					time_to_timeout = 5;
-					sendRequestVoteReply(rpc, true);
+					// ambil last log index
+					int lastLogIdx = logs.size() - 1;
+					int lastLogTerm = logs[lastLogIdx].term;
+					// cek log term
+					if (rpc.last_log_term > lastLogTerm) {
+						
+						current_term = rpc.term;
+						voted_for = rpc.candidate_id;
+						time_to_timeout = 5;
+						sendRequestVoteReply(rpc, true, current_term);
+					}
 				}
+
 			}
 		} else if (current_term < rpc.term) {
 			//rubah leader jadi follower
@@ -289,9 +300,9 @@ namespace raft {
 			//voted for menjadi candidate id
 			voted_for = rpc.candidate_id;
 			current_term = rpc.term;
-			sendRequestVoteReply(rpc, true);
+			sendRequestVoteReply(rpc, true, current_term);
 		}
-  	}
+	}
 
 	void Server::Receive(RequestVoteReply reply){
 		if (state == State::CANDIDATE) {
@@ -300,13 +311,13 @@ namespace raft {
 			}
 			
 			//count the vote
-			int count_vote = 1;
+			int count_vote = 0;
 			for (int i = 1; i <= cluster_size; i++) {
 				if(vote_granted[i]) {
 					count_vote += 1;
 				}
 			}
-
+			// printf("%d %d\n", count_vote, cluster_size);
 			//if has majority vote
 			if (2 * count_vote > cluster_size) {
 				//yeay kepilih jadi leader

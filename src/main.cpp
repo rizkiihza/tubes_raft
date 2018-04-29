@@ -16,7 +16,27 @@ int main(){
 		int server;
 
 		std::cin >> cmd;
-		if( cmd == "force_timeout" ){
+		
+		//easy command
+		if (cmd == "gas") {
+			for(int i = 1; i <= cluster_size; i++) {
+				simulation.PrintServerState(i);
+			}	
+		} else if( cmd == "ft" ){
+			std::cin >> server;
+			simulation.SetTimeout(server, 0);
+		} else if( cmd == "ts"){
+			simulation.Timestep();
+		} else if( cmd == "gl" ){
+			for(int i = 1; i <= cluster_size; i++) {
+				simulation.PrintServerLog(i);
+			}
+		} else if(cmd == "go") {
+			simulation.PrintOutbox();
+		}  else if( cmd == "fo" ){
+			simulation.FlushOutbox();
+		}
+		else if( cmd == "force_timeout" ){
 			std::cin >> server;
 			simulation.SetTimeout(server, 0);
 		} else if( cmd == "set_timeout" ){
