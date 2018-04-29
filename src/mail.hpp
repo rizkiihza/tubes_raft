@@ -19,6 +19,7 @@ namespace raft {
 		RequestVoteRPC request;
 
 		// payload
+		int term;
 		bool vote_granted;
 	};
 
