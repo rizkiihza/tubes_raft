@@ -94,7 +94,7 @@ namespace raft {
 			}
 			//commit index menjadi log dengan index tertinggi
 			//yang dimiliki mayoritas server
-			if (commit_max > commit_index) {
+			if (commit_max > commit_index && logs[commit_max].term == current_term) {
 				commit_index = commit_max;
 			}
 			ApplyLog();
