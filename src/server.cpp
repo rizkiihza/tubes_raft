@@ -36,7 +36,6 @@ namespace raft {
 	}
 
 	void Server::Crash(){
-		// reset state
 		voted_for = -1;
 		time_to_timeout = 5;
 		state = State::FOLLOWER;
@@ -52,7 +51,6 @@ namespace raft {
 		aer.request = rpc;
 		aer.success = success;
 		aer.term = term;
-		//kirim reply
 		sender.Send(rpc.leader_id , aer);
 	}
 
@@ -63,37 +61,28 @@ namespace raft {
 		rvr.vote_granted = voted;
 		rvr.term = term;
 
-		//kirim reply
-		// std::cout << "from : " << rvr.from_id << " for server :" << rpc.candidate_id << " term: " << m_term << std::endl;
 		sender.Send(rpc.candidate_id, rvr);
 	}
 
-	//fungsi helper untuk commit
 	void Server::leader_commit() {
-		//jika leader
 		if (state == State::LEADER) {
 			int commit_max = -1;
 
-			//untuk tiap log yang ada pada leader
 			for(int lg = 0; lg < logs.size(); lg++) {
 
-				//hitung jumlah node yang memiliki log ini
 				int count_log_available = 0;
 				for (int i = 1; i <= cluster_size; i++) {
 					if (i != server_index) {
 						if (match_index[i] >= lg) {
 							count_log_available += 1;
-						} 
+						}
 					}
 				}
 
-				//jika log dimiliki oleh mayoritas
 				if (2 * (count_log_available + 1) > cluster_size) {
 					commit_max = lg;
 				}
 			}
-			//commit index menjadi log dengan index tertinggi
-			//yang dimiliki mayoritas server
 			if (commit_max > commit_index && logs[commit_max].term == current_term) {
 				commit_index = commit_max;
 			}
@@ -102,17 +91,13 @@ namespace raft {
 	}
 
 	void Server::Timestep(){
-		//check log to commit in leader server
 		leader_commit();
 
 		if (time_to_timeout == 0) {
 			if (state == State::LEADER) {
-				//server leader time_to_timeout nya 3
 				time_to_timeout = 2;
-				//kirim heartbeat ke node-node lainnya
 				for(int i = 1; i <= cluster_size; i++) {
 					if (i != server_index) {
-						//heartbeat
 						AppendEntriesRPC rpc;
 						rpc.term = current_term;
 						rpc.leader_id = server_index;
@@ -121,30 +106,24 @@ namespace raft {
 
 						if(logs.size() > 0)
 							rpc.prev_log_term = logs[rpc.prev_log_index].term;
-						else 
+						else
 							rpc.prev_log_term = -1;
 
-						//isi logs yang diperlukan 
 						rpc.logs.clear();
 						if (next_index[i] < logs.size())
 							rpc.logs.push_back(logs[next_index[i]]);
 
-						//send the heartbeat
 						sender.Send(i, rpc);
 					}
 				}
 			} else if (state == State::FOLLOWER || state == State::CANDIDATE) {
-				//ganti follower jadi candidate
-				//start election
 				time_to_timeout = 4;
 				current_term += 1;
 				state = State::CANDIDATE;
 				voted_for = server_index;
 
-				//give request vote to all node
 				for(int i = 1; i <= cluster_size; i++) {
 					if (i != server_index) {
-						//create request vote objects
 						RequestVoteRPC rpc;
 						rpc.term = current_term;
 						rpc.candidate_id = server_index;
@@ -155,56 +134,39 @@ namespace raft {
 						else
 							rpc.last_log_term = 1;
 
-						//send the request vote
 						sender.Send(i, rpc);
 					}
 				}
 
-				//inisiasi untuk vector vote_granted
 				for(int i = 0; i <= cluster_size; i++) {
 					vote_granted[i] = false;
 				}
 				vote_granted[server_index] = true;
 			}
 		} else if (time_to_timeout > 0) {
-			//satu langkah menuju timeout
 			time_to_timeout--;
 		}
 	}
 
 	void Server::Receive(AppendEntriesRPC rpc){
-		//jika node merupakan follower atau candidate
 		if (state == State::FOLLOWER || state == State::CANDIDATE) {
 
-			//update variable yg perlu di update
 			if (rpc.term < current_term) {
-				//term dari heartbeat kurang da	ri term current server
 				sendAppendEntriesReply(rpc, false, current_term);
-			} else { 
-				//candidate jika menerma rpc dengan term >= term dia
-				//akan berubah jadi follower
+			} else {
 				if (state == State::CANDIDATE) {
 					state = State::FOLLOWER;
 				}
 
-				//reset stat
 				time_to_timeout = 5;
 				leader = rpc.leader_id;
-				// commit_index = std::min(rpc.leader_commit_index, (int) logs.size());
 
-				// //jika commit index ketinggalan
-				// //apply log hingga commit index
-				// ApplyLog();
-
-				//kalau ganti term, voted_for jadi -1 lagi
 				if (current_term < rpc.term) {
 					voted_for = -1;
-				}	
+				}
 
 				current_term = rpc.term;
 
-				//tandanya sudah paling rendah, tidak ada yang sama
-				//langsung isi dengan log yang datang
 				if (rpc.prev_log_index == -1) {
 					logs.clear();
 					for(int i = 0; i < rpc.logs.size(); i++) {
@@ -213,18 +175,14 @@ namespace raft {
 					sendAppendEntriesReply(rpc, true, rpc.term);
 				}
 				else if (rpc.prev_log_index >= logs.size()){
-					//current server tidak punya log dengan index prev_log_index	
 					sendAppendEntriesReply(rpc, false, rpc.term);
 				} else if (logs[rpc.prev_log_index].term != rpc.prev_log_term) {
-					//term dari log dengan index prev_log_index tidak sama dengan rpc.prev_log_term
 					sendAppendEntriesReply(rpc, false, rpc.term);
 				} else if(logs[rpc.prev_log_index].term == rpc.prev_log_term){
-					//hapus logs yg conflict sama logs yang dikirim
 					for(int i = rpc.prev_log_index + 1; i < logs.size(); i++) {
 						logs.erase(logs.begin() + i);
 					}
 
-					//tambahkan log yang index nya lebih dari logs.size()
 					for(int i = 0; i <  rpc.logs.size(); i++) {
 						logs.push_back(rpc.logs[i]);
 					}
@@ -234,8 +192,6 @@ namespace raft {
 
 				commit_index = std::min(rpc.leader_commit_index, (int) logs.size());
 
-				//jika commit index ketinggalan
-				//apply log hingga commit index
 				ApplyLog();
 			}
 		}
@@ -257,28 +213,20 @@ namespace raft {
 	}
 
 	void Server::Receive(RequestVoteRPC rpc){
-		// printf("%d %d\n", current_term, rpc.term);
 		if (current_term > rpc.term) {
 			int diff_term = current_term;
-			// std::cout << "server : " << server_index<< " candidate less term: " << current_term << std::endl;		
-			// std::cout << "for server : " << rpc.candidate_id << " term : "<< rpc.term << std::endl;
-			sendRequestVoteReply(rpc, false, diff_term);	
+			sendRequestVoteReply(rpc, false, diff_term);
 		} else if (current_term == rpc.term) {
-			//jika leader, tolak request vote yg term sama
-			// printf("entry\n");
 			if (state == State::LEADER) {
 				sendRequestVoteReply(rpc, false, rpc.term);
 			} else {
 				if (voted_for == -1 || voted_for == rpc.candidate_id) {
-					//voted for menjadi candidate id
 					if (state == State::CANDIDATE) {
 						state = State::FOLLOWER;
 					}
-					// ambil last log index
 					if (logs.size() > 0) {
 						int lastLogIdx = logs.size() - 1;
 						int lastLogTerm = logs[lastLogIdx].term;
-						// cek log term
 						if (rpc.last_log_term >= lastLogTerm) {
 							current_term = rpc.term;
 							voted_for = rpc.candidate_id;
@@ -295,11 +243,9 @@ namespace raft {
 
 			}
 		} else if (current_term < rpc.term) {
-			//rubah leader jadi follower
-			//jika term kurang dari rpc.term
 			if (state == State::LEADER) {
 				state = State::FOLLOWER;
-			} 
+			}
 
 			if (state == State::CANDIDATE) {
 				state = State::FOLLOWER;
@@ -307,14 +253,12 @@ namespace raft {
 
 			time_to_timeout = 5;
 
-			//voted for menjadi candidate id
 			voted_for = rpc.candidate_id;
 			current_term = rpc.term;
 
 			if (logs.size() > 0) {
 				int lastLogIdx = logs.size() - 1;
 				int lastLogTerm = logs[lastLogIdx].term;
-				// cek log term
 				if (rpc.last_log_term >= lastLogTerm) {
 					current_term = rpc.term;
 					voted_for = rpc.candidate_id;
@@ -331,9 +275,7 @@ namespace raft {
 	}
 
 	void Server::Receive(RequestVoteReply reply){
-		// std::cout << "sever :" << server_index << " request vote term : " << current_term << " " << reply.term << std::endl;
 		if (reply.term > current_term) {
-			// std::cout << "received more term from " << reply.from_id << " term: " << reply.term << std::endl;
 			state = State::FOLLOWER;
 			current_term = reply.term;
 		}
@@ -342,32 +284,27 @@ namespace raft {
 			if (reply.vote_granted) {
 				vote_granted[reply.from_id] = true;
 			}
-			
-			//count the vote
+
 			int count_vote = 0;
 			for (int i = 1; i <= cluster_size; i++) {
 				if(vote_granted[i]) {
 					count_vote += 1;
 				}
 			}
-			// printf("%d %d\n", count_vote, cluster_size);
-			//if has majority vote
 			if (2 * count_vote > cluster_size) {
-				//yeay kepilih jadi leader
 				state = State::LEADER;
 				time_to_timeout = 0;
 				leader = server_index;
-				
+
 				for(int i = 1; i <= cluster_size; i++) {
 					next_index[i] = logs.size();
-					match_index[i] = -1;				
+					match_index[i] = -1;
 				}
 			}
 		}
   	}
 
   	void Server::Receive(Log log){
-		// receive client request
   		if( state == State::LEADER ){
   			log.term = current_term;
   			logs.push_back(log);
@@ -375,8 +312,6 @@ namespace raft {
   	}
 
 	void Server::ApplyLog(){
-		//commit log yang belum dicommit tp bisa dicommit
-		//dari last_applied + 1 hingga commit_index
 
 		int starting = last_applied;
 		int last_index = 0;
@@ -384,7 +319,6 @@ namespace raft {
 		for(int i = 0; i <= commit_index && i < logs.size(); i++) {
 			Log current_log = logs[i];
 
-			//if block untuk semua jenis operasi
 			if (current_log.operation == Operation::ADD) {
 				data = data + current_log.payload;
 			} else if (current_log.operation == Operation::SUBTRACT) {
@@ -394,7 +328,7 @@ namespace raft {
 			} else if (current_log.operation == Operation::REPLACE) {
 				data = current_log.payload;
 			}
-			last_index = i; 
+			last_index = i;
 		}
 		last_applied = last_index - 1;
 	}
@@ -409,15 +343,14 @@ namespace raft {
 		os << "S" << s.server_index << " "
 				  << state_str << " "
 				  << "term:" << s.current_term << " "
-				  << "voted_for:" << s.voted_for << " " 
+				  << "voted_for:" << s.voted_for << " "
 				  << "commit_index:" << s.commit_index + 1<< " "
 				  << "data:" << s.data << " "
-				//   << "time_to_timeout:" << s.time_to_timeout << " "
 				  << "logs:" << log_str << " ";
 		return os;
 	}
 
-	
+
 	std::string Server::GetLeaderStateString() const {
 		std::stringstream ss;
 
@@ -453,7 +386,7 @@ namespace raft {
 	}
 
 	std::string Server::GetLogString() const {
-		std::stringstream log_str; 
+		std::stringstream log_str;
 		log_str << "T0[0";
 
 		int cterm = 0;

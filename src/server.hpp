@@ -42,7 +42,6 @@ namespace raft {
 		int GetData() const;
 		int GetCommitIndex() const;
 	private:
-		// persistent state
 		int current_term;
 		int voted_for;
 		std::vector<Log> logs;
@@ -50,23 +49,18 @@ namespace raft {
 		int server_index;
 		int data;
 
-		//variable tambahan leader untuk menyimpan current_leader
 		int leader;
 
-		// volatile state
 		int commit_index;
 		int last_applied;
 
-		// destroyed when crash
 		State state;
 		int time_to_timeout;
 
-		// volatile state leader
 		std::vector<int> next_index;
 		std::vector<int> match_index;
 		Sender sender;
 
-		// volatile state candidate
 		std::vector<bool> vote_granted;
 		int vote_count;
 	};

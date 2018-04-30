@@ -10,21 +10,14 @@ int main(){
 	std::cin >> cluster_size;
 
 	raft::RaftSimulation simulation(cluster_size);
-	
+
 	while(running){
 		std::string cmd;
 		int server;
 
 		std::cin >> cmd;
-		
-		//easy command
-		if (cmd == "gas") {
-			std::cout<<std::endl;
-			for(int i = 1; i <= cluster_size; i++) {
-				simulation.PrintServerState(i);
-			}	
-			std::cout << std::endl;
-		} else if( cmd == "ft" ){
+
+		if( cmd == "ft" ){
 			std::cin >> server;
 			simulation.SetTimeout(server, 0);
 		} else if( cmd == "ts"){
