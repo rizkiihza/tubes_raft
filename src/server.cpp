@@ -278,8 +278,7 @@ namespace raft {
 					int lastLogIdx = logs.size() - 1;
 					int lastLogTerm = logs[lastLogIdx].term;
 					// cek log term
-					if (rpc.last_log_term > lastLogTerm) {
-						
+					if (rpc.last_log_term >= lastLogTerm) {
 						current_term = rpc.term;
 						voted_for = rpc.candidate_id;
 						time_to_timeout = 5;
@@ -304,7 +303,23 @@ namespace raft {
 			//voted for menjadi candidate id
 			voted_for = rpc.candidate_id;
 			current_term = rpc.term;
-			sendRequestVoteReply(rpc, true, current_term);
+
+			if (logs.size() > 0) {
+				int lastLogIdx = logs.size() - 1;
+				int lastLogTerm = logs[lastLogIdx].term;
+				// cek log term
+				if (rpc.last_log_term >= lastLogTerm) {
+					current_term = rpc.term;
+					voted_for = rpc.candidate_id;
+					time_to_timeout = 5;
+					sendRequestVoteReply(rpc, true, current_term);
+				} else {
+					sendRequestVoteReply(rpc, false, current_term);
+				}
+			}
+			else {
+				sendRequestVoteReply(rpc, true, current_term);
+			}
 		}
 	}
 
@@ -357,9 +372,11 @@ namespace raft {
 		//dari last_applied + 1 hingga commit_index
 
 		int starting = last_applied;
-		for(int i = starting + 1; i <= commit_index && i < logs.size(); i++) {
+		int last_index = 0;
+		data = 0;
+		for(int i = 0; i <= commit_index && i < logs.size(); i++) {
 			Log current_log = logs[i];
-			
+
 			//if block untuk semua jenis operasi
 			if (current_log.operation == Operation::ADD) {
 				data = data + current_log.payload;
@@ -370,8 +387,9 @@ namespace raft {
 			} else if (current_log.operation == Operation::REPLACE) {
 				data = current_log.payload;
 			}
-			last_applied += 1; 
+			last_index = i; 
 		}
+		last_applied = last_index - 1;
 	}
 
 

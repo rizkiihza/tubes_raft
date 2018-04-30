@@ -19,6 +19,7 @@ int main(){
 		
 		//easy command
 		if (cmd == "gas") {
+			std::cout<<std::endl;
 			for(int i = 1; i <= cluster_size; i++) {
 				simulation.PrintServerState(i);
 			}	
