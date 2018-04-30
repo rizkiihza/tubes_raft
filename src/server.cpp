@@ -275,14 +275,21 @@ namespace raft {
 						state = State::FOLLOWER;
 					}
 					// ambil last log index
-					int lastLogIdx = logs.size() - 1;
-					int lastLogTerm = logs[lastLogIdx].term;
-					// cek log term
-					if (rpc.last_log_term >= lastLogTerm) {
-						current_term = rpc.term;
-						voted_for = rpc.candidate_id;
-						time_to_timeout = 5;
-						sendRequestVoteReply(rpc, true, current_term);
+					if (logs.size() > 0) {
+						int lastLogIdx = logs.size() - 1;
+						int lastLogTerm = logs[lastLogIdx].term;
+						// cek log term
+						if (rpc.last_log_term >= lastLogTerm) {
+							current_term = rpc.term;
+							voted_for = rpc.candidate_id;
+							time_to_timeout = 5;
+							sendRequestVoteReply(rpc, true, current_term);
+						}
+						else {
+							sendRequestVoteReply(rpc, false, current_term);
+						}
+					} else {
+							sendRequestVoteReply(rpc, true, current_term);
 					}
 				}
 
