@@ -56,12 +56,12 @@ namespace raft {
 		sender.Send(rpc.leader_id , aer);
 	}
 
-	void Server::sendRequestVoteReply(RequestVoteRPC rpc, bool voted, int m_term) {
+	void Server::sendRequestVoteReply(RequestVoteRPC rpc, bool voted, int term) {
 		RequestVoteReply rvr;
 		rvr.from_id = server_index;
 		rvr.request = rpc;
 		rvr.vote_granted = voted;
-		rvr.term = m_term;
+		rvr.term = term;
 
 		//kirim reply
 		// std::cout << "from : " << rvr.from_id << " for server :" << rpc.candidate_id << " term: " << m_term << std::endl;
@@ -256,7 +256,8 @@ namespace raft {
 		leader_commit();
 	}
 
-  	void Server::Receive(RequestVoteRPC rpc){
+	void Server::Receive(RequestVoteRPC rpc){
+		// printf("%d %d\n", current_term, rpc.term);
 		if (current_term > rpc.term) {
 			int diff_term = current_term;
 			// std::cout << "server : " << server_index<< " candidate less term: " << current_term << std::endl;		
@@ -264,6 +265,7 @@ namespace raft {
 			sendRequestVoteReply(rpc, false, diff_term);	
 		} else if (current_term == rpc.term) {
 			//jika leader, tolak request vote yg term sama
+			// printf("entry\n");
 			if (state == State::LEADER) {
 				sendRequestVoteReply(rpc, false, rpc.term);
 			} else {
@@ -272,11 +274,19 @@ namespace raft {
 					if (state == State::CANDIDATE) {
 						state = State::FOLLOWER;
 					}
-
-					voted_for = rpc.candidate_id;
-					time_to_timeout = 5;
-					sendRequestVoteReply(rpc, true, rpc.term);
+					// ambil last log index
+					int lastLogIdx = logs.size() - 1;
+					int lastLogTerm = logs[lastLogIdx].term;
+					// cek log term
+					if (rpc.last_log_term > lastLogTerm) {
+						
+						current_term = rpc.term;
+						voted_for = rpc.candidate_id;
+						time_to_timeout = 5;
+						sendRequestVoteReply(rpc, true, current_term);
+					}
 				}
+
 			}
 		} else if (current_term < rpc.term) {
 			//rubah leader jadi follower
@@ -294,9 +304,9 @@ namespace raft {
 			//voted for menjadi candidate id
 			voted_for = rpc.candidate_id;
 			current_term = rpc.term;
-			sendRequestVoteReply(rpc, true, rpc.term);
+			sendRequestVoteReply(rpc, true, current_term);
 		}
-  	}
+	}
 
 	void Server::Receive(RequestVoteReply reply){
 		// std::cout << "sever :" << server_index << " request vote term : " << current_term << " " << reply.term << std::endl;
@@ -312,13 +322,13 @@ namespace raft {
 			}
 			
 			//count the vote
-			int count_vote = 1;
+			int count_vote = 0;
 			for (int i = 1; i <= cluster_size; i++) {
 				if(vote_granted[i]) {
 					count_vote += 1;
 				}
 			}
-
+			// printf("%d %d\n", count_vote, cluster_size);
 			//if has majority vote
 			if (2 * count_vote > cluster_size) {
 				//yeay kepilih jadi leader

@@ -16,7 +16,7 @@ int main(){
 		int server;
 
 		std::cin >> cmd;
-
+		
 		//easy command
 		if (cmd == "gas") {
 			for(int i = 1; i <= cluster_size; i++) {
@@ -37,10 +37,7 @@ int main(){
 		}  else if( cmd == "fo" ){
 			simulation.FlushOutbox();
 		}
-		
-		
-		
-		if( cmd == "force_timeout" ){
+		else if( cmd == "force_timeout" ){
 			std::cin >> server;
 			simulation.SetTimeout(server, 0);
 		} else if( cmd == "set_timeout" ){
