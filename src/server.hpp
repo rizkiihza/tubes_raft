@@ -32,7 +32,7 @@ namespace raft {
 
 		//helper
 		void sendAppendEntriesReply(AppendEntriesRPC rpc, bool success, int term);
-		void sendRequestVoteReply(RequestVoteRPC rpc, bool voted);
+		void sendRequestVoteReply(RequestVoteRPC rpc, bool voted, int term);
 		void leader_commit();
 
 		friend std::ostream & operator<<(std::ostream &os, const Server& s);

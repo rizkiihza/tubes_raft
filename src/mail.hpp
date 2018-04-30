@@ -17,8 +17,10 @@ namespace raft {
 		// id 
 		int from_id;
 		RequestVoteRPC request;
+		
 
 		// payload
+		int term;
 		bool vote_granted;
 	};
 

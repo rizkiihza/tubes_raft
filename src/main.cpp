@@ -22,6 +22,7 @@ int main(){
 			for(int i = 1; i <= cluster_size; i++) {
 				simulation.PrintServerState(i);
 			}	
+			std::cout << std::endl;
 		} else if( cmd == "ft" ){
 			std::cin >> server;
 			simulation.SetTimeout(server, 0);

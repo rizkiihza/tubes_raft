@@ -14,6 +14,7 @@ namespace raft {
 			type_str = "RequestVoteReply";
 			std::stringstream s;
 			s << "from_id:" << m.rvreply.from_id << "\nvote_granted:" << (m.rvreply.vote_granted?"TRUE":"FALSE");
+			s << "term" << m.rvreply.term;
 			payload = s.str();
 		} else if( m.type == MailType::AERPC ){
 			type_str = "AppendEntriesRPC";
